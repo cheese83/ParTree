@@ -1,0 +1,231 @@
+﻿<Window x:Class="ParTree.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ParTree"
+        mc:Ignorable="d"
+        Title="ParTree" Height="640" Width="1024" MinHeight="480" MinWidth="480">
+    <Window.DataContext>
+        <local:ParTreeViewModel/>
+    </Window.DataContext>
+    <Grid Margin="5,5,5,5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="2*" MinHeight="100"/>
+            <RowDefinition Height="*" MinHeight="100"/>
+        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBox Name="WorkingDirPath" Text="{Binding WorkingDirPath}" TextWrapping="Wrap" VerticalAlignment="Top" Margin="0,0,48,0" InputScope="FullFilePath" Height="27" VerticalContentAlignment="Center"/>
+                <Button ToolTip="Select working directory" HorizontalAlignment="Right" VerticalAlignment="Top" Click="WorkingDirButton_Click" Margin="0,0,10,0">
+                    <Image Source="{Binding WorkingDirIcon}" Width="24" Height="24" Stretch="Fill" VerticalAlignment="Stretch" HorizontalAlignment="Right" Margin="4,2,0,0"/>
+                </Button>
+                <TreeView Name="DirTree" Grid.Row="1" ItemsSource="{Binding DirectoryList}" Margin="0,0,5,0">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate DataType="{x:Type local:ParTreeDirectory}" ItemsSource="{Binding Subdirectories}">
+                            <StackPanel Orientation="Horizontal" ContextMenuOpening="ContextMenu_ContextMenuOpening" ToolTip="{Binding StatusSummary}">
+                                <CheckBox IsChecked="{Binding Selected}" IsThreeState="false" VerticalAlignment="Center" Checked="TreeViewItem_Checked" Unchecked="TreeViewItem_Unchecked"/>
+                                <Label DataContext="{Binding}" VerticalAlignment="Center" Margin="-2,-3,-5,-3">
+                                    <Label.Style>
+                                        <Style TargetType="Label">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasRecoveryFiles}" Value="true">
+                                                    <Setter Property="Content" Value="❔"/>
+                                                    <Setter Property="Foreground" Value="#0000DD"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Verified}" Value="true">
+                                                    <Setter Property="Content" Value="✔"/>
+                                                    <Setter Property="Foreground" Value="#00DD00"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Verified}" Value="false">
+                                                    <Setter Property="Content" Value="✘"/>
+                                                    <Setter Property="Foreground" Value="#DD0000"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Label.Style>
+                                </Label>
+                                <Image Width="20" Height="20" Stretch="Fill" Source="{Binding ImageSource}"/>
+                                <TextBlock Text="{Binding Name}" Margin="5,0"/>
+                                <StackPanel.Resources>
+                                    <Style TargetType="StackPanel">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Enabled}" Value="false">
+                                                <Setter Property="IsEnabled" Value="false"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Resources>
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                    <TreeView.Resources>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="ContextMenu" Value="{DynamicResource ItemContextMenu}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Expanded}" Value="true">
+                                    <Setter Property="IsExpanded" Value="true"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                        <ContextMenu x:Key="ItemContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="Check For New Files" Click="CheckForNewFiles_Click">
+                                <MenuItem.Resources>
+                                    <Style TargetType="MenuItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ContainsRecoverableFiles}" Value="false">
+                                                <Setter Property="IsEnabled" Value="false"/>
+                                                <Setter Property="ToolTip" Value="No selected directories here."/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Resources>
+                            </MenuItem>
+                            <MenuItem Header="Recreate Recovery Files" Click="Recreate_Click">
+                                <MenuItem.Resources>
+                                    <Style TargetType="MenuItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ContainsRecoverableFiles}" Value="false">
+                                                <Setter Property="IsEnabled" Value="false"/>
+                                                <Setter Property="ToolTip" Value="No recovery files to recreate."/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Resources>
+                            </MenuItem>
+                            <MenuItem Header="Verify" Click="Verify_Click">
+                                <MenuItem.Resources>
+                                    <Style TargetType="MenuItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ContainsRecoverableFiles}" Value="false">
+                                                <Setter Property="IsEnabled" Value="false"/>
+                                                <Setter Property="ToolTip" Value="There are no recovery files to verify with."/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Resources>
+                            </MenuItem>
+                            <MenuItem Header="Repair" Click="Repair_Click">
+                                <MenuItem.Resources>
+                                    <Style TargetType="MenuItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ContainsRecoverableFiles}" Value="false">
+                                                <Setter Property="IsEnabled" Value="false"/>
+                                                <Setter Property="ToolTip" Value="There are no recovery files to repair with."/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Resources>
+                            </MenuItem>
+                            <MenuItem Header="Explore" Click="Explore_Click"/>
+                        </ContextMenu>
+                    </TreeView.Resources>
+                </TreeView>
+            </Grid>
+            <GridSplitter Width="5" Grid.Column="0"/>
+            <Grid Grid.Column="1" Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Redundancy" Grid.Column="0" Margin="0,2,4,0"/>
+                    <Slider Name="Redundancy" Minimum="0" Maximum="3.0" Grid.Column="1" Value="{Binding Redundancy}" Margin="0,7,0,0"/>
+                    <Label Content="{Binding RedundancyPercent}" ContentStringFormat="0.##\%" Grid.Column="2" MinWidth="46"/>
+                </Grid>
+                <DataGrid Name="FileList" Grid.Row="1" ItemsSource="{Binding SelectedItem.Files, ElementName=DirTree}" AutoGenerateColumns="false">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Status">
+                            <DataGridTextColumn.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="ToolTip" Value="{Binding Status}"/>
+                                    <Setter Property="TextBlock.TextAlignment" Value="Center"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsVerifiable}" Value="true">
+                                            <Setter Property="Foreground" Value="#0000DD"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate>
+                                                        <ContentPresenter Content="❔"/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsComplete}" Value="true">
+                                            <Setter Property="Foreground" Value="#00DD00"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate>
+                                                        <ContentPresenter Content="✔"/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsIncomplete}" Value="true">
+                                            <Setter Property="Foreground" Value="#DD0000"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate>
+                                                        <ContentPresenter Content="✘"/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.CellStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Binding="{Binding Name}" Header="Name"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+            <Grid Name="Overlay" Grid.ColumnSpan="2" Background="#7F787878">
+                <Border BorderBrush="#FF787878" BorderThickness="1" Background="#FFF0F0F0" HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="200" MinHeight="100">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding BusyMessage}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,10"/>
+                        <Button Name="CancelButton" Content="Cancel" Margin="0,10,0,10" HorizontalAlignment="Center" VerticalAlignment="Stretch" MinWidth="80"/>
+                    </StackPanel>
+                </Border>
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Hidden"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Busy}" Value="true">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+            </Grid>
+        </Grid>
+        <GridSplitter Height="5" Grid.Row="1"  HorizontalAlignment="Stretch" VerticalAlignment="Top"/>
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Margin="0,5,0,0" BorderBrush="Black" BorderThickness="0.5">
+            <Grid VerticalAlignment="Stretch">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Button Name="OutpuLogClearButton" Click="OutpuLogClearButton_Click" ToolTip="Clear output log" HorizontalAlignment="Left">
+                    <Image Source="{Binding OutpuLogClearIcon}"/>
+                </Button>
+                <Rectangle Margin="12,0,0,0" Fill="#FFF0F0F0"></Rectangle>
+                <ScrollViewer Name="OutputLogScroll" HorizontalScrollBarVisibility="Auto" Grid.Row="1">
+                    <TextBox Text="{Binding OutputLog}" IsReadOnly="true"  BorderThickness="0" Margin="5,5,5,5"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
