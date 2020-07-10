@@ -20,6 +20,7 @@ namespace ParTree
         private bool IsBaseDir => _selected;
         private DirectoryInfo DirInfo => new DirectoryInfo(DirPath);
         public string Name => DirInfo.Name;
+        public bool Exists => DirInfo.Exists;
 
         /// <summary>Location of recovery files that are for this directory, not a parent directory</summary>
         private readonly string _thisRecoveryDirPath;

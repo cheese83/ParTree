@@ -125,7 +125,18 @@
                                     </Style>
                                 </MenuItem.Resources>
                             </MenuItem>
-                            <MenuItem Header="Explore" Click="Explore_Click"/>
+                            <MenuItem Header="Explore" Click="Explore_Click">
+                                <MenuItem.Resources>
+                                    <Style TargetType="MenuItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Exists}" Value="false">
+                                                <Setter Property="IsEnabled" Value="false"/>
+                                                <Setter Property="ToolTip" Value="This directory is missing."/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Resources>
+                            </MenuItem>
                         </ContextMenu>
                     </TreeView.Resources>
                 </TreeView>
