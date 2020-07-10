@@ -104,7 +104,7 @@ namespace ParTree
 
         public bool? Verified => !HasRecoveryFiles || !_files.IsValueCreated || AllFiles.Any(x => !x.IsVerified)
             ? (bool?)null
-            : _files.Value.Where(x => x.IsVerifiable).All(x => x.IsComplete);
+            : _files.Value.Where(x => x.IsVerifiable).All(x => x.IsComplete) && Subdirectories.All(x => x.Verified == true);
 
         public string StatusSummary
         {
