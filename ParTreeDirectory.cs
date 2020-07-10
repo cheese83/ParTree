@@ -47,10 +47,41 @@ namespace ParTree
         private readonly Lazy<IReadOnlyCollection<ParTreeDirectory>> _subdirectories;
         public IReadOnlyCollection<ParTreeDirectory> Subdirectories => _subdirectories.Value;
 
+        private bool _recoveryFilesAreNew;
+        private IReadOnlyCollection<ParTreeFile>? _allRecoverableFiles;
         /// <summary>Files covered by a recovery file, in this directory and all subdirectories</summary>
-        private readonly List<ParTreeFile> _allRecoverableFiles;
+        private IReadOnlyCollection<ParTreeFile> AllRecoverableFiles
+        {
+            get
+            {
+                if (_recoveryFilesAreNew || _allRecoverableFiles == null)
+                {
+                    if (!HasRecoveryFiles)
+                    {
+                        _allRecoverableFiles = new List<ParTreeFile>();
+                    }
+                    else if (IsBaseDir)
+                    {
+                        _allRecoverableFiles = _recoveryFilesAreNew
+                            ? AllFiles
+                            : Task.Run(() => Par2Helper.List(ThisRecoveryFilePath)).Result
+                                .Select(x => new ParTreeFile(Path.GetFullPath(x, DirPath), FileStatus.Unverified))
+                                .ToList();
+                    }
+                    else
+                    {
+                        _allRecoverableFiles = _parent!.AllRecoverableFiles
+                            .Where(x => x.DirPath.StartsWith(DirPath, StringComparison.Ordinal))
+                            .ToList();
+                    }
+                    
+                }
+
+                return _allRecoverableFiles;
+            }
+        }
         /// <summary>Files in this directory covered by a recovery file</summary>
-        private IReadOnlyList<ParTreeFile> RecoverableFiles => _allRecoverableFiles.Where(x => x.DirPath == DirPath).ToList();
+        private IReadOnlyList<ParTreeFile> RecoverableFiles => AllRecoverableFiles.Where(x => x.DirPath == DirPath).ToList();
         /// <summary>All files in this directory and its subdirectories</summary>
         private IReadOnlyCollection<ParTreeFile> AllFiles => Files.Concat(Subdirectories.SelectMany(x => x.AllFiles)).ToList();
         /// <summary>Files currently in this directory, and any that the recovery file says should be here</summary>
@@ -102,7 +133,7 @@ namespace ParTree
             }
         }
 
-        public bool? Verified => !HasRecoveryFiles || !_files.IsValueCreated || AllFiles.Any(x => !x.IsVerified)
+        public bool? Verified => !HasRecoveryFiles || !_files.IsValueCreated || (AllFiles.Any(x => !x.IsVerified) && !AllFiles.Any(x => x.IsIncomplete))
             ? (bool?)null
             : _files.Value.Where(x => x.IsVerifiable).All(x => x.IsComplete) && Subdirectories.All(x => x.Verified == true);
 
@@ -162,7 +193,7 @@ namespace ParTree
                     var existingSubdirs = DirInfo.EnumerateDirectoriesOrEmpty()
                         .Where(childDirInfo => childDirInfo.Name != RECOVERY_DIR_NAME)
                         .Select(x => x.FullName);
-                    var recoverableSubDirs = _allRecoverableFiles
+                    var recoverableSubDirs = AllRecoverableFiles
                         .Where(x => x.IsVerifiable && x.IsInSubdirectoryOf(DirInfo))
                         .Select(x => x.DirPath)
                         .Distinct();
@@ -183,25 +214,11 @@ namespace ParTree
                 }
             });
 
-            _allRecoverableFiles = new List<ParTreeFile>();
             _files = new Lazy<IReadOnlyCollection<ParTreeFile>>(() =>
             {
                 try
                 {
                     var existantFiles = DirInfo.EnumerateFilesOrEmpty().Select(x => x.FullName).ToList();
-
-                    if (HasRecoveryFiles)
-                    {
-                        if (IsBaseDir)
-                        {
-                            _allRecoverableFiles.AddRange(Task.Run(() => Par2Helper.List(ThisRecoveryFilePath)).Result
-                                .Select(x => new ParTreeFile(Path.GetFullPath(x, DirPath), FileStatus.Unverified)));
-                        }
-                        else
-                        {
-                            _allRecoverableFiles.AddRange(_parent!._allRecoverableFiles.Where(x => x.DirPath.StartsWith(DirPath, StringComparison.Ordinal)));
-                        }
-                    }
 
                     foreach (var file in RecoverableFiles)
                     {
@@ -236,6 +253,8 @@ namespace ParTree
                 WorkingDir.ThisRecoveryDirInfo.Attributes |= FileAttributes.Hidden;
             }
 
+            _recoveryFilesAreNew = true;
+
             if (_selected)
             {
                 if (recreateExisting || !HasRecoveryFiles)
@@ -248,8 +267,7 @@ namespace ParTree
                     var exitCode = await Par2Helper.Create(DirPath, ThisRecoveryFilePath, updateStatus, redundancy, token);
                     if (exitCode == 0)
                     {
-                        _allRecoverableFiles.AddRange(AllFiles.Except(_allRecoverableFiles));
-                        foreach (var file in _allRecoverableFiles)
+                        foreach (var file in AllRecoverableFiles)
                         {
                             file.Status = FileStatus.Complete;
                         }
@@ -265,10 +283,6 @@ namespace ParTree
                         // TODO: Display error.
                     }
                 }
-            }
-            else if (HasSelectedAncestor)
-            {
-                OnPropertyChanged(nameof(Verified));
             }
 
             OnPropertyChanged(nameof(Verified));
@@ -294,6 +308,8 @@ namespace ParTree
                 {
                     par2file.Delete();
                 }
+
+                _recoveryFilesAreNew = true;
 
                 for (var parent = _parent; parent != null; parent = parent._parent)
                 {
@@ -377,7 +393,7 @@ namespace ParTree
 
                 if (exitCode == 0 || exitCode == 16)
                 {
-                    foreach (var file in _allRecoverableFiles)
+                    foreach (var file in AllRecoverableFiles)
                     {
                         file.Status = FileStatus.Complete;
                     }
