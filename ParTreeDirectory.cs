@@ -221,16 +221,23 @@ namespace ParTree
                 {
                     var existantFiles = DirInfo.EnumerateFilesOrEmpty().Select(x => x.FullName).ToList();
 
-                    foreach (var file in RecoverableFiles)
+                    if (_recoveryFilesAreNew)
                     {
-                        file.Status = existantFiles.Contains(file.FullName) ? FileStatus.Unverified : FileStatus.Missing;
+                        return existantFiles.Select(x => new ParTreeFile(x, FileStatus.Unknown)).ToList();
                     }
+                    else
+                    {
+                        foreach (var file in RecoverableFiles)
+                        {
+                            file.Status = existantFiles.Contains(file.FullName) ? FileStatus.Unverified : FileStatus.Missing;
+                        }
 
-                    var unverifiableFiles = existantFiles.Except(RecoverableFiles.Select(x => x.FullName));
+                        var unverifiableFiles = existantFiles.Except(RecoverableFiles.Select(x => x.FullName));
 
-                    return HasRecoveryFiles
-                        ? RecoverableFiles.Concat(unverifiableFiles.Select(x => new ParTreeFile(x, FileStatus.New))).ToList()
-                        : unverifiableFiles.Select(x => new ParTreeFile(x, FileStatus.Unknown)).ToList();
+                        return HasRecoveryFiles
+                            ? RecoverableFiles.Concat(unverifiableFiles.Select(x => new ParTreeFile(x, FileStatus.New))).ToList()
+                            : unverifiableFiles.Select(x => new ParTreeFile(x, FileStatus.Unknown)).ToList();
+                    }
                 }
                 catch
                 {
