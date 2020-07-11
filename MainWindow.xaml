@@ -37,7 +37,7 @@
                                     <Label.Style>
                                         <Style TargetType="Label">
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasRecoveryFiles}" Value="true">
+                                                <DataTrigger Binding="{Binding ContainsRecoverableFiles}" Value="true">
                                                     <Setter Property="Content" Value="❔"/>
                                                     <Setter Property="Foreground" Value="#0000DD"/>
                                                 </DataTrigger>

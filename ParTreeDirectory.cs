@@ -134,9 +134,9 @@ namespace ParTree
             }
         }
 
-        public bool? Verified => !HasRecoveryFiles || !_files.IsValueCreated || (AllFiles.Any(x => !x.IsVerified) && !AllFiles.Any(x => x.IsIncomplete))
+        public bool? Verified => !ContainsRecoverableFiles || Subdirectories.Any(x => x.ContainsRecoverableFiles && x.Verified == null) || (HasRecoveryFiles && (!_files.IsValueCreated || (AllFiles.Any(x => x.IsVerifiable && !x.IsVerified) && !AllFiles.Any(x => x.IsIncomplete))))
             ? (bool?)null
-            : _files.Value.Where(x => x.IsVerifiable).All(x => x.IsComplete) && Subdirectories.All(x => x.Verified == true);
+            : (!HasRecoveryFiles || _files.Value.Where(x => x.IsVerifiable).All(x => x.IsComplete)) && Subdirectories.Where(x => x.ContainsRecoverableFiles).All(x => x.Verified == true);
 
         public string StatusSummary
         {
@@ -301,6 +301,11 @@ namespace ParTree
             {
                 await subDir.CreateRecoveryFiles(updateStatus, redundancy, recreateExisting, token);
             }
+
+            for (var parent = _parent; parent != null; parent = parent._parent)
+            {
+                parent.OnPropertyChanged(nameof(Verified));
+            }
         }
 
         public void DeleteUnusedRecoveryFiles()
@@ -370,6 +375,11 @@ namespace ParTree
                         _ => FileStatus.Corrupt
                     };
                 }
+
+                for (var parent = _parent; parent != null; parent = parent._parent)
+                {
+                    parent.OnPropertyChanged(nameof(Verified));
+                }
             }
 
             foreach (var subDir in Subdirectories)
@@ -415,6 +425,11 @@ namespace ParTree
             foreach (var subDir in Subdirectories)
             {
                 await subDir.repairFiles(updateStatus, token);
+            }
+
+            for (var parent = _parent; parent != null; parent = parent._parent)
+            {
+                parent.OnPropertyChanged(nameof(Verified));
             }
         }
     }
