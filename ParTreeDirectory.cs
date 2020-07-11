@@ -75,7 +75,7 @@ namespace ParTree
                             .Where(x => x.DirPath.StartsWith(DirPath, StringComparison.Ordinal))
                             .ToList();
                     }
-                    
+
                 }
 
                 return _allRecoverableFiles;
@@ -116,6 +116,7 @@ namespace ParTree
 
         private bool _selected;
         // This is nullable so the checkboxes in the GUI can be tri-state.
+        [RelatedProperties(nameof(Enabled))]
         public bool? Selected
         {
             get => _selected ? true : ContainsSelectedSubdirectory ? (bool?)null : false;
@@ -124,7 +125,6 @@ namespace ParTree
                 _selected = value ?? false;
 
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(Enabled));
 
                 foreach (var subDir in Subdirectories)
                 {
@@ -134,6 +134,8 @@ namespace ParTree
             }
         }
 
+        [RelatedProperties(nameof(StatusSummary), nameof(Files))]
+        [RelatedParentProperties(nameof(Verified))]
         public bool? Verified => !ContainsRecoverableFiles || Subdirectories.Any(x => x.ContainsRecoverableFiles && x.Verified == null) || (HasRecoveryFiles && (!_files.IsValueCreated || (AllFiles.Any(x => x.IsVerifiable && !x.IsVerified) && !AllFiles.Any(x => x.IsIncomplete))))
             ? (bool?)null
             : (!HasRecoveryFiles || _files.Value.Where(x => x.IsVerifiable).All(x => x.IsComplete)) && Subdirectories.Where(x => x.ContainsRecoverableFiles).All(x => x.Verified == true);
@@ -170,7 +172,36 @@ namespace ParTree
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+            var property = GetType().GetProperty(propertyName!);
+            var relatedProperties = property == null
+                ? throw new ArgumentException($"There is no property with the name '{propertyName}'", nameof(propertyName))
+                : property
+                    .GetCustomAttributes(typeof(RelatedPropertiesAttribute), inherit: false)
+                    .Cast<RelatedPropertiesAttribute>()
+                    .FirstOrDefault()?.Names ?? new List<string>();
+
+            foreach (var name in relatedProperties)
+            {
+                OnPropertyChanged(name);
+            }
+
+            if (_parent != null)
+            {
+                var relatedParentProperties = property
+                    .GetCustomAttributes(typeof(RelatedParentPropertiesAttribute), inherit: false)
+                    .Cast<RelatedParentPropertiesAttribute>()
+                    .FirstOrDefault()?.Names ?? new List<string>();
+
+                foreach (var name in relatedParentProperties)
+                {
+                    _parent.OnPropertyChanged(name);
+                }
+            }
+        }
 
         public ParTreeDirectory(string path) : this(path, null)
         {
@@ -294,17 +325,10 @@ namespace ParTree
             }
 
             OnPropertyChanged(nameof(Verified));
-            OnPropertyChanged(nameof(StatusSummary));
-            OnPropertyChanged(nameof(Files));
 
             foreach (var subDir in Subdirectories)
             {
                 await subDir.CreateRecoveryFiles(updateStatus, redundancy, recreateExisting, token);
-            }
-
-            for (var parent = _parent; parent != null; parent = parent._parent)
-            {
-                parent.OnPropertyChanged(nameof(Verified));
             }
         }
 
@@ -375,11 +399,6 @@ namespace ParTree
                         _ => FileStatus.Corrupt
                     };
                 }
-
-                for (var parent = _parent; parent != null; parent = parent._parent)
-                {
-                    parent.OnPropertyChanged(nameof(Verified));
-                }
             }
 
             foreach (var subDir in Subdirectories)
@@ -388,8 +407,6 @@ namespace ParTree
             }
 
             OnPropertyChanged(nameof(Verified));
-            OnPropertyChanged(nameof(StatusSummary));
-            OnPropertyChanged(nameof(Files));
         }
 
         public async Task RepairFiles(Action<string> updateStatus, CancellationToken token)
@@ -419,17 +436,10 @@ namespace ParTree
             }
 
             OnPropertyChanged(nameof(Verified));
-            OnPropertyChanged(nameof(StatusSummary));
-            OnPropertyChanged(nameof(Files));
 
             foreach (var subDir in Subdirectories)
             {
                 await subDir.repairFiles(updateStatus, token);
-            }
-
-            for (var parent = _parent; parent != null; parent = parent._parent)
-            {
-                parent.OnPropertyChanged(nameof(Verified));
             }
         }
     }
