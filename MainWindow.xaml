@@ -32,7 +32,7 @@
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type local:ParTreeDirectory}" ItemsSource="{Binding Subdirectories}">
                             <StackPanel Orientation="Horizontal" ContextMenuOpening="ContextMenu_ContextMenuOpening" ToolTip="{Binding StatusSummary}">
-                                <CheckBox IsChecked="{Binding Selected}" IsThreeState="false" VerticalAlignment="Center" Checked="TreeViewItem_Checked" Unchecked="TreeViewItem_Unchecked"/>
+                                <CheckBox IsChecked="{Binding Selected}" IsThreeState="false" VerticalAlignment="Center" Checked="TreeViewItem_Checked" Click="TreeViewItem_Click"/>
                                 <Label DataContext="{Binding}" VerticalAlignment="Center" Margin="-2,-3,-5,-3">
                                     <Label.Style>
                                         <Style TargetType="Label">

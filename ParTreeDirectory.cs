@@ -93,6 +93,7 @@ namespace ParTree
         public IReadOnlyCollection<ParTreeFile> AllNewFiles => _selected ? AllFiles.Where(x => x.Status == FileStatus.New).ToList() : Subdirectories.SelectMany(x => x.AllNewFiles).ToList();
 
         private bool HasSelectedAncestor => _parent != null && (_parent._selected || _parent.HasSelectedAncestor);
+        // Note that this checks for recovery files rather than _selected to avoid enumerating Subdirectories, which would be slow if this was the top of a large tree.
         private bool ContainsSelectedSubdirectory => !_selected && ThisRecoveryDirInfo.EnumerateDirectoriesOrEmpty().Any(x => x.EnumerateFilesOrEmpty($"*.{PAR2_EXTENSION}", SearchOption.AllDirectories).Any());
         /// <summary>If this directory or any of its subdirectories has recovery files</summary>
         public bool ContainsRecoverableFiles => HasRecoveryFiles || ContainsSelectedSubdirectory;
@@ -124,13 +125,12 @@ namespace ParTree
             {
                 _selected = value ?? false;
 
-                OnPropertyChanged();
-
                 foreach (var subDir in Subdirectories)
                 {
-                    // This only has to be done when this.Selected = true, but do it always so that subdirectories fire their OnPropertyChanged event for Enabled.
                     subDir.Selected = false;
                 }
+
+                OnPropertyChanged();
             }
         }
 
@@ -339,6 +339,11 @@ namespace ParTree
                 return;
             }
 
+            foreach (var subDir in Subdirectories)
+            {
+                subDir.DeleteUnusedRecoveryFiles();
+            }
+
             if (!_selected)
             {
                 foreach (var par2file in ThisRecoveryFileInfos)
@@ -348,21 +353,22 @@ namespace ParTree
 
                 _recoveryFilesAreNew = true;
 
+                DeleteRecoveryDirIfempty();
+
                 for (var parent = _parent; parent != null; parent = parent._parent)
                 {
-                    parent.OnPropertyChanged(nameof(Selected));
+                    parent.DeleteRecoveryDirIfempty();
                 }
             }
+        }
 
-            foreach (var subDir in Subdirectories)
-            {
-                subDir.DeleteUnusedRecoveryFiles();
-            }
-
+        private void DeleteRecoveryDirIfempty()
+        {
             if (ThisRecoveryDirInfo.Exists && !ThisRecoveryDirInfo.EnumerateDirectories().Any() && !ThisRecoveryDirInfo.EnumerateFiles().Any())
             {
-                // Ensure checkboxes of parent dirs are tri-stated when appropriate.
                 ThisRecoveryDirInfo.Delete();
+                ThisRecoveryDirInfo.Refresh(); // Sometimes DirectoryInfo.Exists remains true after calling Delete. Seems to happen if the dir is open in Windows Explorer when it's deleted. Calling Refresh fixes it.
+                OnPropertyChanged(nameof(Selected));
             }
         }
 

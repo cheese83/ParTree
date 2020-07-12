@@ -103,10 +103,17 @@ namespace ParTree
             }
         }
 
-        private void TreeViewItem_Unchecked(object sender, RoutedEventArgs e)
+        // When a tri-state node is unchecked, it is supposed to uncheck all its children too, but if a node has never been expanded
+        // then its children don't exist in the TreeView yet, so their Unchecked event isn't called. This means that Selected for *this* node
+        // Doesn't actually change, and it's Unchecked event isn't called either. Use the Click event instead.
+        private void TreeViewItem_Click(object sender, RoutedEventArgs e)
         {
             var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
-            dirInfo.DeleteUnusedRecoveryFiles();
+
+            if (dirInfo.Selected != true) // Selected may be null here because subdirs haven't had their recovery files deleted at this point.
+            {
+                dirInfo.DeleteUnusedRecoveryFiles();
+            }
         }
 
         private void CheckForNewFiles_Click(object sender, RoutedEventArgs e)
