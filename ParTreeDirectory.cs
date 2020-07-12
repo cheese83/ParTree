@@ -96,7 +96,7 @@ namespace ParTree
         // Note that this checks for recovery files rather than _selected to avoid enumerating Subdirectories, which would be slow if this was the top of a large tree.
         private bool ContainsSelectedSubdirectory => !_selected && ThisRecoveryDirInfo.EnumerateDirectoriesOrEmpty().Any(x => x.EnumerateFilesOrEmpty($"*.{PAR2_EXTENSION}", SearchOption.AllDirectories).Any());
         /// <summary>If this directory or any of its subdirectories has recovery files</summary>
-        public bool ContainsRecoverableFiles => HasRecoveryFiles || ContainsSelectedSubdirectory;
+        public bool ContainsRecoverableFiles => (HasRecoveryFiles && RecoverableFiles.Any()) || ContainsSelectedSubdirectory;
 
         /// <summary>Expanded in the GUI tree</summary>
         public bool Expanded { get; set; }
