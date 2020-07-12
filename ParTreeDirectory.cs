@@ -117,7 +117,7 @@ namespace ParTree
 
         private bool _selected;
         // This is nullable so the checkboxes in the GUI can be tri-state.
-        [RelatedProperties(nameof(Enabled))]
+        [RelatedProperties(nameof(Enabled), nameof(ContainsRecoverableFiles), nameof(Verified))]
         public bool? Selected
         {
             get => _selected ? true : ContainsSelectedSubdirectory ? (bool?)null : false;
