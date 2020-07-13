@@ -24,7 +24,7 @@
                     <RowDefinition Height="35"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBox Name="WorkingDirPath" Text="{Binding WorkingDirPath}" TextWrapping="Wrap" VerticalAlignment="Top" Margin="0,0,48,0" InputScope="FullFilePath" Height="27" VerticalContentAlignment="Center"/>
+                <TextBox Name="WorkingDirPath" Text="{Binding WorkingDirPath}" KeyUp="WorkingDirPath_KeyUp" TextWrapping="Wrap" VerticalAlignment="Top" Margin="0,0,48,0" InputScope="FullFilePath" Height="27" VerticalContentAlignment="Center"/>
                 <Button ToolTip="Select working directory" HorizontalAlignment="Right" VerticalAlignment="Top" Click="WorkingDirButton_Click" Margin="0,0,10,0">
                     <Image Source="{Binding WorkingDirIcon}" Width="24" Height="24" Stretch="Fill" VerticalAlignment="Stretch" HorizontalAlignment="Right" Margin="4,2,0,0"/>
                 </Button>

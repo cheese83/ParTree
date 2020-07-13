@@ -71,7 +71,7 @@ namespace ParTree
             return tokenSource.IsCancellationRequested;
         }
 
-        private void WorkingDirButton_Click(object sender, RoutedEventArgs e)
+        private async void WorkingDirButton_Click(object sender, RoutedEventArgs e)
         {
             using var dialog = new System.Windows.Forms.FolderBrowserDialog()
             {
@@ -81,9 +81,25 @@ namespace ParTree
             };
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                ViewModel.WorkingDirPath = dialog.SelectedPath;
-                ViewModel.OutputLog = "";
+                WorkingDirPath.Text = dialog.SelectedPath;
+                await SetWorkingDir();
             }
+        }
+
+        private async void WorkingDirPath_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter || e.Key == System.Windows.Input.Key.Return)
+            {
+                await SetWorkingDir();
+            }
+        }
+
+        private async Task SetWorkingDir()
+        {
+            var cancelled = await ShowOverlayUntilComplete("Checking for recoverable files", token =>
+            {
+                return ViewModel.SetWorkingDir(WorkingDirPath.Text, token);
+            });
         }
 
         private T DataContextFromEventSender<T>(object sender) => (T)((FrameworkElement)sender).DataContext;
@@ -211,9 +227,7 @@ namespace ParTree
             get => _workingDirectory?.DirPath;
             set
             {
-                _workingDirectory = value == null ? null : new ParTreeDirectory(value);
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(DirectoryList));
+                // Setter needed for two-way binding to work, but the value is actually set in SetWorkingDir.
             }
         }
 
@@ -276,6 +290,24 @@ namespace ParTree
         public ParTreeViewModel()
         {
             LoadConfig();
+        }
+
+        public async Task SetWorkingDir(string? workingDirPath, CancellationToken token)
+        {
+            OutputLog = "";
+
+            if (string.IsNullOrWhiteSpace(workingDirPath))
+            {
+                _workingDirectory = null;
+            }
+            else
+            {
+                _workingDirectory = new ParTreeDirectory(workingDirPath);
+                await _workingDirectory.CheckForVerifiableFiles(token);
+            }
+
+            OnPropertyChanged(nameof(WorkingDirPath));
+            OnPropertyChanged(nameof(DirectoryList));
         }
 
         public void LoadConfig()
