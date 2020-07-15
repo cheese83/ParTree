@@ -140,17 +140,23 @@ namespace ParTree
             }
         }
 
-        private void CheckForNewFiles_Click(object sender, RoutedEventArgs e)
+        private async void CheckForNewFiles_Click(object sender, RoutedEventArgs e)
         {
-            var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
-            var files = dirInfo.AllNewFiles;
-
-            ViewModel.AddLineToOutputLog($"Found {files.Count} files not included in existing recovery files.");
-
-            foreach (var file in files)
+            await ShowOverlayUntilComplete("Checking for new files", token =>
             {
-                ViewModel.AddLineToOutputLog(file.FullName);
-            }
+                var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
+                return Task.Run(async () =>
+                {
+                    var files = await dirInfo.GetAllNewFiles(token);
+
+                    ViewModel.AddLineToOutputLog($"Found {files.Count} files not included in existing recovery files.");
+
+                    foreach (var file in files)
+                    {
+                        ViewModel.AddLineToOutputLog(file.FullName);
+                    }
+                });
+            });
         }
 
         private async void Recreate_Click(object sender, RoutedEventArgs e)

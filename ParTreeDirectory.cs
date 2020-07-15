@@ -89,8 +89,6 @@ namespace ParTree
         private readonly Lazy<IReadOnlyCollection<ParTreeFile>> _files;
         /// <summary>Files currently in this directory, and any that the recovery file says should be here</summary>
         public IReadOnlyCollection<ParTreeFile> Files => _files.Value;
-        /// <summary>Files in this directory or any subdirectory with recovery files, but not included in those recovery files</summary>
-        public IReadOnlyCollection<ParTreeFile> AllNewFiles => _selected ? AllFiles.Where(x => x.Status == FileStatus.New).ToList() : Subdirectories.SelectMany(x => x.AllNewFiles).ToList();
 
         private bool HasSelectedAncestor => _parent != null && (_parent._selected || _parent.HasSelectedAncestor);
         // Note that this checks for recovery files rather than _selected to avoid enumerating Subdirectories, which would be slow if this was the top of a large tree.
@@ -301,6 +299,30 @@ namespace ParTree
                 }
             }
         }
+
+        /// <returns>Files in this directory or any subdirectory with recovery files, but not included in those recovery files</returns>
+        public async Task<IReadOnlyCollection<ParTreeFile>> GetAllNewFiles(CancellationToken token)
+        {
+            if (token.IsCancellationRequested)
+            {
+                return new List<ParTreeFile>();
+            }
+
+            if (IsBaseDir)
+            {
+                return AllFiles.Where(x => x.Status == FileStatus.New).ToList();
+            }
+            else
+            {
+                var newFiles = new List<ParTreeFile>();
+                foreach (var dir in Subdirectories)
+                {
+                    newFiles.AddRange(await dir.GetAllNewFiles(token));
+                }
+                return newFiles;
+            }
+        }
+
 
         public async Task CreateRecoveryFiles(Action<string> updateStatus, double redundancy, bool recreateExisting, CancellationToken token)
         {
