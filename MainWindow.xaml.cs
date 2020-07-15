@@ -100,6 +100,14 @@ namespace ParTree
             {
                 return ViewModel.SetWorkingDir(WorkingDirPath.Text, token);
             });
+
+            // If a dir was previously open, then opening a new one select the first node.
+            // That causes spurious scrolling under some conditions, so deselect it now.
+            var firstItem = DirTree.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
+            if (firstItem != null)
+            {
+                firstItem.IsSelected = false;
+            }
         }
 
         private T DataContextFromEventSender<T>(object sender) => (T)((FrameworkElement)sender).DataContext;
