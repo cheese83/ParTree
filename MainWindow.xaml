@@ -89,18 +89,6 @@
                                     </Style>
                                 </MenuItem.Resources>
                             </MenuItem>
-                            <MenuItem Header="Recreate Recovery Files" Click="Recreate_Click">
-                                <MenuItem.Resources>
-                                    <Style TargetType="MenuItem">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ContainsRecoverableFiles}" Value="false">
-                                                <Setter Property="IsEnabled" Value="false"/>
-                                                <Setter Property="ToolTip" Value="No recovery files to recreate."/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </MenuItem.Resources>
-                            </MenuItem>
                             <MenuItem Header="Verify" Click="Verify_Click">
                                 <MenuItem.Resources>
                                     <Style TargetType="MenuItem">

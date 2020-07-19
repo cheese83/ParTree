@@ -159,16 +159,6 @@ namespace ParTree
             });
         }
 
-        private async void Recreate_Click(object sender, RoutedEventArgs e)
-        {
-            await ShowOverlayUntilComplete("Creating recovery Files", token =>
-            {
-                var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
-                return dirInfo.CreateRecoveryFiles(ViewModel.AddLineToOutputLog, ViewModel.RedundancyPercent, recreateExisting: true, token: token);
-            });
-            // TODO: If this is cancelled partway through, the recovery files might be incomplete. Perhaps change the process to be atomic?
-        }
-
         private void DeleteUnused_Click(object sender, RoutedEventArgs e)
         {
             var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
