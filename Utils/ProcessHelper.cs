@@ -16,7 +16,8 @@ namespace ParTree
 
             using (var process = new Process())
             {
-                var tcs = new TaskCompletionSource<int>();
+                var processTcs = new TaskCompletionSource<int>();
+                var stdOutTcs = new TaskCompletionSource<int>();
 
                 process.EnableRaisingEvents = true;
 
@@ -28,7 +29,7 @@ namespace ParTree
                     Arguments = string.Join(" ", arguments)
                 };
 
-                process.Exited += (sender, e) => tcs.TrySetResult(process.ExitCode);
+                process.Exited += (sender, e) => processTcs.TrySetResult(process.ExitCode);
 
                 // Although par2j can be cancelled by pressing 'c', it reads it using _getch, which can't read anything that can be sent from C#.
                 // Just kill the process instead.
@@ -38,12 +39,20 @@ namespace ParTree
 
                 if (processStdOut != null)
                 {
-                    // e.Data is set to null when the stream is closed. Don't call the event handler in that case, so it doesn't have to handle nulls.
-                    process.OutputDataReceived += (sender, e) => { if (e.Data != null) processStdOut(e.Data); };
+                    process.OutputDataReceived += (sender, e) =>
+                    {
+                        // e.Data is set to null when the stream is closed. Don't call the event handler in that case, so it doesn't have to handle nulls.
+                        if (e.Data == null)
+                            stdOutTcs.TrySetResult(0);
+                        else
+                            processStdOut(e.Data);
+                    };
                     process.BeginOutputReadLine();
+                    // Wait, otherwise the process could be disposed before the last few lines have been received.
+                    await stdOutTcs.Task;
                 }
 
-                exitCode = await tcs.Task;
+                exitCode = await processTcs.Task;
             }
 
             return exitCode;
