@@ -46,9 +46,10 @@ namespace ParTree
         }
 
         /// <returns>True if the task was cancelled</returns>
-        private async Task<bool> ShowOverlayUntilComplete(string busyMessage, Func<CancellationToken, Task> action)
+        private async Task<bool> ShowOverlayUntilComplete(string busyTitle, Func<IProgress<string>, CancellationToken, Task> action)
         {
             var tokenSource = new CancellationTokenSource();
+            var progress = new Progress<string>(s => ViewModel.BusyProgress = s);
             void cancelButton_Click(object sender, RoutedEventArgs e)
             {
                 tokenSource.Cancel();
@@ -58,9 +59,10 @@ namespace ParTree
             try
             {
                 ViewModel.Busy = true;
-                ViewModel.BusyMessage = busyMessage;
+                ViewModel.BusyTitle = busyTitle;
+                ViewModel.BusyProgress = "";
                 CancelButton.Click += cancelButton_Click;
-                await action(tokenSource.Token);
+                await action(progress, tokenSource.Token);
             }
             finally
             {
@@ -96,9 +98,9 @@ namespace ParTree
 
         private async Task SetWorkingDir()
         {
-            var cancelled = await ShowOverlayUntilComplete("Checking for recoverable files", token =>
+            var cancelled = await ShowOverlayUntilComplete("Checking for recoverable files", (progress, token) =>
             {
-                return ViewModel.SetWorkingDir(WorkingDirPath.Text, token);
+                return ViewModel.SetWorkingDir(WorkingDirPath.Text, progress, token);
             });
 
             // If a dir was previously open, then opening a new one select the first node.
@@ -115,7 +117,7 @@ namespace ParTree
         private async void TreeViewItem_Checked(object sender, RoutedEventArgs e)
         {
             var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
-            var cancelled = await ShowOverlayUntilComplete("Creating recovery Files", token =>
+            var cancelled = await ShowOverlayUntilComplete("Creating recovery Files", (progress, token) =>
             {
                 return dirInfo.CreateRecoveryFiles(ViewModel.AddLineToOutputLog, ViewModel.RedundancyPercent, recreateExisting: false, token: token);
             });
@@ -142,12 +144,14 @@ namespace ParTree
 
         private async void CheckForNewFiles_Click(object sender, RoutedEventArgs e)
         {
-            await ShowOverlayUntilComplete("Checking for new files", token =>
+            await ShowOverlayUntilComplete("Checking for new files", (progress, token) =>
             {
                 var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
                 return Task.Run(async () =>
                 {
-                    var files = await dirInfo.GetAllNewFiles(token);
+                    var dirCount = 0;
+                    var fileCount = 0;
+                    var files = await dirInfo.GetAllNewFiles(count => progress.Report($"Found {fileCount += count} files in {++dirCount} directories"), token);
 
                     ViewModel.AddLineToOutputLog($"Found {files.Count} files not included in existing recovery files.");
 
@@ -167,18 +171,20 @@ namespace ParTree
 
         private async void Verify_Click(object sender, RoutedEventArgs e)
         {
-            await ShowOverlayUntilComplete("Verifying Files", token =>
+            await ShowOverlayUntilComplete("Verifying Files", (progress, token) =>
             {
                 var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
-                return dirInfo.VerifyFiles(ViewModel.AddLineToOutputLog, token);
+                var verifiedDirCount = 0;
+                return dirInfo.VerifyFiles(verified => { if (verified) progress.Report($"Verified {++verifiedDirCount} directories"); }, ViewModel.AddLineToOutputLog, token);
             });
         }
         private async void Repair_Click(object sender, RoutedEventArgs e)
         {
-            await ShowOverlayUntilComplete("Repairing Files", token =>
+            await ShowOverlayUntilComplete("Repairing Files", (progress, token) =>
             {
                 var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
-                return dirInfo.RepairFiles(ViewModel.AddLineToOutputLog, token);
+                var repairedDirCount = 0;
+                return dirInfo.RepairFiles(repaired => { if (repaired) progress.Report($"Repaired {++repairedDirCount} directories"); }, ViewModel.AddLineToOutputLog, token);
             });
         }
 
@@ -261,13 +267,23 @@ namespace ParTree
                 OnPropertyChanged();
             }
         }
-        private string _busyMessage = "Busy";
-        public string BusyMessage
+        private string _busyTitle = "Busy";
+        public string BusyTitle
         {
-            get => _busyMessage;
+            get => _busyTitle;
             set
             {
-                _busyMessage = value;
+                _busyTitle = value;
+                OnPropertyChanged();
+            }
+        }
+        private string _busyProgress = "";
+        public string BusyProgress
+        {
+            get => _busyProgress;
+            set
+            {
+                _busyProgress = value;
                 OnPropertyChanged();
             }
         }
@@ -296,7 +312,7 @@ namespace ParTree
             LoadConfig();
         }
 
-        public async Task SetWorkingDir(string? workingDirPath, CancellationToken token)
+        public async Task SetWorkingDir(string? workingDirPath, IProgress<string> progress, CancellationToken token)
         {
             OutputLog = "";
 
@@ -306,8 +322,11 @@ namespace ParTree
             }
             else
             {
+                progress.Report("Initializing");
+                await Task.Yield();
                 _workingDirectory = new ParTreeDirectory(workingDirPath);
-                await _workingDirectory.CheckForVerifiableFiles(token);
+                var recoveryFiles = 0;
+                await _workingDirectory.CheckForVerifiableFiles(found => { if (found) progress.Report($"Found {++recoveryFiles} recovery files"); }, token);
             }
 
             OnPropertyChanged(nameof(WorkingDirPath));

@@ -194,8 +194,9 @@
             <Grid Name="Overlay" Grid.ColumnSpan="2" Background="#7F787878">
                 <Border BorderBrush="#FF787878" BorderThickness="1" Background="#FFF0F0F0" HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="200" MinHeight="100">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding BusyMessage}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,10"/>
-                        <Button Name="CancelButton" Content="Cancel" Margin="0,10,0,10" HorizontalAlignment="Center" VerticalAlignment="Stretch" MinWidth="80"/>
+                        <TextBlock Text="{Binding BusyTitle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding BusyProgress}" HorizontalAlignment="Center" Margin="0,10,0,15"/>
+                        <Button Name="CancelButton" Content="Cancel" HorizontalAlignment="Center" VerticalAlignment="Stretch" MinWidth="80"/>
                     </StackPanel>
                 </Border>
                 <Grid.Style>

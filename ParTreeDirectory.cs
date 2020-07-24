@@ -278,7 +278,7 @@ namespace ParTree
         }
 
         // Call this after the constructor to ensure that Verified can be computed for dirs with selected subdirs before they have been revealed in the TreeView.
-        public async Task CheckForVerifiableFiles(CancellationToken token)
+        public async Task CheckForVerifiableFiles(Action<bool> foundRecoveryFiles, CancellationToken token)
         {
             if (token.IsCancellationRequested)
             {
@@ -293,15 +293,17 @@ namespace ParTree
                     _ = Files;
                 });
 
+                foundRecoveryFiles(IsBaseDir);
+
                 foreach (var dir in Subdirectories)
                 {
-                    await dir.CheckForVerifiableFiles(token);
+                    await dir.CheckForVerifiableFiles(foundRecoveryFiles, token);
                 }
             }
         }
 
         /// <returns>Files in this directory or any subdirectory with recovery files, but not included in those recovery files</returns>
-        public async Task<IReadOnlyCollection<ParTreeFile>> GetAllNewFiles(CancellationToken token)
+        public async Task<IReadOnlyCollection<ParTreeFile>> GetAllNewFiles(Action<int> filesFound, CancellationToken token)
         {
             if (token.IsCancellationRequested)
             {
@@ -310,14 +312,17 @@ namespace ParTree
 
             if (IsBaseDir)
             {
-                return AllFiles.Where(x => x.Status == FileStatus.New).ToList();
+                var newFiles = AllFiles.Where(x => x.Status == FileStatus.New).ToList();
+                filesFound(newFiles.Count);
+                return newFiles;
             }
             else
             {
                 var newFiles = new List<ParTreeFile>();
+                filesFound(0);
                 foreach (var dir in Subdirectories)
                 {
-                    newFiles.AddRange(await dir.GetAllNewFiles(token));
+                    newFiles.AddRange(await dir.GetAllNewFiles(filesFound, token));
                 }
                 return newFiles;
             }
@@ -418,13 +423,13 @@ namespace ParTree
             }
         }
 
-        public async Task VerifyFiles(Action<string> updateStatus, CancellationToken token)
+        public async Task VerifyFiles(Action<bool> verified, Action<string> updateStatus, CancellationToken token)
         {
             await ((!_selected && HasSelectedAncestor)
-                ? BaseDir!.verifyFiles(updateStatus, token) // It's not possible to verify only some of the files covered by a recovery file, so do the whole lot.
-                : verifyFiles(updateStatus, token));
+                ? BaseDir!.verifyFiles(verified, updateStatus, token) // It's not possible to verify only some of the files covered by a recovery file, so do the whole lot.
+                : verifyFiles(verified, updateStatus, token));
         }
-        private async Task verifyFiles(Action<string> updateStatus, CancellationToken token)
+        private async Task verifyFiles(Action<bool> verified, Action<string> updateStatus, CancellationToken token)
         {
             if (token.IsCancellationRequested)
             {
@@ -453,21 +458,23 @@ namespace ParTree
                 }
             }
 
+            verified(_selected);
+
             foreach (var subDir in Subdirectories)
             {
-                await subDir.verifyFiles(updateStatus, token);
+                await subDir.verifyFiles(verified, updateStatus, token);
             }
 
             OnPropertyChanged(nameof(Verified));
         }
 
-        public async Task RepairFiles(Action<string> updateStatus, CancellationToken token)
+        public async Task RepairFiles(Action<bool> repaired, Action<string> updateStatus, CancellationToken token)
         {
             await ((!_selected && HasSelectedAncestor)
-                ? BaseDir!.repairFiles(updateStatus, token) // It's not possible to repair only some of the files covered by a recovery file, so do the whole lot.
-                : repairFiles(updateStatus, token));
+                ? BaseDir!.repairFiles(repaired, updateStatus, token) // It's not possible to repair only some of the files covered by a recovery file, so do the whole lot.
+                : repairFiles(repaired, updateStatus, token));
         }
-        private async Task repairFiles(Action<string> updateStatus, CancellationToken token)
+        private async Task repairFiles(Action<bool> repaired, Action<string> updateStatus, CancellationToken token)
         {
             if (token.IsCancellationRequested)
             {
@@ -488,10 +495,11 @@ namespace ParTree
             }
 
             OnPropertyChanged(nameof(Verified));
+            repaired(_selected);
 
             foreach (var subDir in Subdirectories)
             {
-                await subDir.repairFiles(updateStatus, token);
+                await subDir.repairFiles(repaired, updateStatus, token);
             }
         }
     }
