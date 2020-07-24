@@ -329,13 +329,8 @@ namespace ParTree
         }
 
 
-        public async Task CreateRecoveryFiles(Action<string> updateStatus, double redundancy, bool recreateExisting, CancellationToken token)
+        public async Task CreateRecoveryFiles(Action<string> updateStatus, double redundancy, CancellationToken token)
         {
-            if (token.IsCancellationRequested)
-            {
-                return;
-            }
-
             if (!WorkingDir.ThisRecoveryDirInfo.Exists)
             {
                 // Create base recovery dir so it can be set to hidden. Par2j will create any other dirs required within it.
@@ -345,42 +340,26 @@ namespace ParTree
 
             _recoveryFilesAreNew = true;
 
-            if (_selected)
+            var exitCode = await Par2Helper.Create(DirPath, ThisRecoveryFilePath, updateStatus, redundancy, token);
+            if (exitCode == 0)
             {
-                if (recreateExisting || !HasRecoveryFiles)
+                foreach (var file in AllRecoverableFiles)
                 {
-                    foreach (var par2file in ThisRecoveryFileInfos)
-                    {
-                        par2file.Delete();
-                    }
-
-                    var exitCode = await Par2Helper.Create(DirPath, ThisRecoveryFilePath, updateStatus, redundancy, token);
-                    if (exitCode == 0)
-                    {
-                        foreach (var file in AllRecoverableFiles)
-                        {
-                            file.Status = FileStatus.Complete;
-                        }
-
-                        for (var parent = _parent; parent != null; parent = parent._parent)
-                        {
-                            // Ensure checkboxes of parent dirs are tri-stated when appropriate.
-                            parent.OnPropertyChanged(nameof(Selected));
-                        }
-                    }
-                    else
-                    {
-                        // TODO: Display error.
-                    }
+                    file.Status = FileStatus.Complete;
                 }
+
+                for (var parent = _parent; parent != null; parent = parent._parent)
+                {
+                    // Ensure checkboxes of parent dirs are tri-stated when appropriate.
+                    parent.OnPropertyChanged(nameof(Selected));
+                }
+            }
+            else
+            {
+                // TODO: Display error.
             }
 
             OnPropertyChanged(nameof(Verified));
-
-            foreach (var subDir in Subdirectories)
-            {
-                await subDir.CreateRecoveryFiles(updateStatus, redundancy, recreateExisting, token);
-            }
         }
 
         public void DeleteUnusedRecoveryFiles()

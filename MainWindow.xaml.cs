@@ -119,7 +119,7 @@ namespace ParTree
             var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
             var cancelled = await ShowOverlayUntilComplete("Creating recovery Files", (progress, token) =>
             {
-                return dirInfo.CreateRecoveryFiles(ViewModel.AddLineToOutputLog, ViewModel.RedundancyPercent, recreateExisting: false, token: token);
+                return dirInfo.CreateRecoveryFiles(ViewModel.AddLineToOutputLog, ViewModel.RedundancyPercent, token: token);
             });
 
             if (cancelled)
