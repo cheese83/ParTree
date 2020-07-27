@@ -70,11 +70,7 @@
                     <TreeView.Resources>
                         <Style TargetType="TreeViewItem">
                             <Setter Property="ContextMenu" Value="{DynamicResource ItemContextMenu}"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding Expanded}" Value="true">
-                                    <Setter Property="IsExpanded" Value="true"/>
-                                </DataTrigger>
-                            </Style.Triggers>
+                            <Setter Property="IsExpanded" Value="{Binding Expanded, Mode=TwoWay}"/>
                         </Style>
                         <ContextMenu x:Key="ItemContextMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="Check For New Files" Click="CheckForNewFiles_Click">
