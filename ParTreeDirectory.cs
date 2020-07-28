@@ -202,7 +202,7 @@ namespace ParTree
                 var existantFiles = DirInfo.EnumerateFilesOrEmpty();
                 var unverifiableFiles = DirInfo.EnumerateFilesOrEmpty()
                     .Where(x => !AllRecoverableFiles.Any(y => x.FullName == y.FullName))
-                    .Select(x => new ParTreeFile(x.FullName, FileStatus.Unknown));
+                    .Select(x => new ParTreeFile(x, FileStatus.Unknown));
 
                 Files = unverifiableFiles.Concat(RecoverableFiles).ToList();
 
@@ -466,11 +466,10 @@ namespace ParTree
 
     public class ParTreeFile : INotifyPropertyChanged
     {
-        private readonly string _filePath;
-        private FileInfo _fileInfo => new FileInfo(_filePath);
-        public string Name => _fileInfo.Name;
-        public string FullName => _fileInfo.FullName;
-        public string DirPath => _fileInfo.Directory.FullName;
+        public string Name { get; }
+        public string FullName { get; }
+        public string DirPath { get; }
+        private readonly string _parentDirPath;
 
         private FileStatus _fileStatus;
         public FileStatus Status
@@ -492,13 +491,17 @@ namespace ParTree
         public bool IsComplete => Status == FileStatus.Complete;
         public bool IsIncomplete => Status == FileStatus.Missing || Status == FileStatus.Corrupt;
 
-        public ParTreeFile(string path, FileStatus status)
+        public ParTreeFile(string path, FileStatus status) : this(new FileInfo(path), status) { }
+        public ParTreeFile(FileInfo fileInfo, FileStatus status)
         {
-            _filePath = path;
             Status = status;
+            DirPath = fileInfo.Directory.FullName;
+            FullName = fileInfo.FullName;
+            Name = fileInfo.Name;
+            _parentDirPath = fileInfo.Directory.Parent?.FullName ?? "";
         }
 
-        public bool IsInSubdirectoryOf(DirectoryInfo dir) => dir.FullName == _fileInfo.Directory.Parent.FullName;
+        public bool IsInSubdirectoryOf(DirectoryInfo dir) => dir.FullName == _parentDirPath;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
