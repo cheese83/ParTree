@@ -325,7 +325,7 @@ namespace ParTree
                 progress.Report("Initializing");
                 await Task.Run(() => _workingDirectory = new ParTreeDirectory(workingDirPath));
                 var recoveryFiles = 0;
-                await _workingDirectory!.CheckForVerifiableFiles(found => { if (found) progress.Report($"Found {++recoveryFiles} recovery files"); }, token);
+                await ParTreeDirectory.CheckForVerifiableFiles(_workingDirectory!, found => { if (found) progress.Report($"Found {++recoveryFiles} recovery files"); }, token);
             }
 
             OnPropertyChanged(nameof(WorkingDirPath));

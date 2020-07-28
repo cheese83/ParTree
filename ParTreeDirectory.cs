@@ -249,21 +249,36 @@ namespace ParTree
             });
         }
 
-        // Call this after the constructor to ensure that Verified can be computed for dirs with selected subdirs before they have been revealed in the TreeView.
-        public async Task CheckForVerifiableFiles(Action<bool> foundRecoveryFiles, CancellationToken token)
+        // Call this to ensure that Verified can be computed for dirs with selected subdirs before they have been revealed in the TreeView.
+        public static async Task CheckForVerifiableFiles(ParTreeDirectory topDir, Action<bool> foundRecoveryFiles, CancellationToken token)
         {
-            if (token.IsCancellationRequested)
+            // Unfortunately .Net doesn't have a built-in way to limit the number of async tasks running at once. Using a semaphore for that purpose seems to perform pretty well.
+            // Since this involves IO, there's probably a limit to how many it's worth running in parallel. Not sure how to determine a good limit, so just pick 16.
+            var maxThreads = Math.Min(Environment.ProcessorCount, 16);
+            using (var sem = new SemaphoreSlim(maxThreads))
             {
-                return;
-            }
+                IEnumerable<ParTreeDirectory> dirs = new List<ParTreeDirectory> { topDir };
 
-            if (ContainsRecoverableFiles)
-            {
-                foundRecoveryFiles(IsBaseDir);
-
-                foreach (var dir in await Task.Run(() => Subdirectories))
+                while (dirs.Any() && !token.IsCancellationRequested)
                 {
-                    await dir.CheckForVerifiableFiles(foundRecoveryFiles, token);
+                    var tasks = dirs.Where(dir => dir.ContainsRecoverableFiles).Select(async dir =>
+                    {
+                        await sem.WaitAsync();
+
+                        try
+                        {
+                            foundRecoveryFiles(dir.IsBaseDir);
+                            return token.IsCancellationRequested
+                                ? new List<ParTreeDirectory>(0)
+                                : await Task.Run(() => dir.Subdirectories);
+                        }
+                        finally
+                        {
+                            sem.Release();
+                        }
+                    });
+
+                    dirs = (await Task.WhenAll(tasks)).SelectMany(x => x);
                 }
             }
         }
