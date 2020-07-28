@@ -89,7 +89,7 @@ namespace ParTree
 
             private bool ParseInputFilename(string line, out string? result)
             {
-                var match = Regex.Match(line, "\\s+[\\d\\?]+\\s+[\\d\\?]+\\s+(?:[\\da-fA-F\\?]+\\s+)?:\\s+\"(.+)\"");
+                var match = Regex.Match(line, "\\s+[\\d\\?]+\\s+[\\d\\?]+\\s+(?:[\\da-fA-F\\?]+\\s+)?:\\s+\"(.*[^/])\"");
                 result = match.Success ? match.Groups[1].Value : null;
                 return match.Success;
             }
