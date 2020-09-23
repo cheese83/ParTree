@@ -219,7 +219,7 @@
                 </Button>
                 <Rectangle Margin="12,0,0,0" Fill="#FFF0F0F0"></Rectangle>
                 <ScrollViewer Name="OutputLogScroll" HorizontalScrollBarVisibility="Auto" Grid.Row="1">
-                    <TextBox Text="{Binding OutputLog}" IsReadOnly="true"  BorderThickness="0" Margin="5,5,5,5"/>
+                    <TextBox Text="{Binding OutputLog, Mode=OneWay}" IsReadOnly="true"  BorderThickness="0" Margin="5,5,5,5"/>
                 </ScrollViewer>
             </Grid>
         </Border>

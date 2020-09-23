@@ -309,7 +309,7 @@ namespace ParTree
             }
         }
 
-        public async Task CreateRecoveryFiles(Action<string> updateStatus, double redundancy, CancellationToken token)
+        public async Task CreateRecoveryFiles(Action<string, bool> updateStatus, double redundancy, CancellationToken token)
         {
             if (!WorkingDir.ThisRecoveryDirInfo.Exists)
             {
@@ -382,13 +382,13 @@ namespace ParTree
             }
         }
 
-        public async Task VerifyFiles(Action<bool> verified, Action<string> updateStatus, CancellationToken token)
+        public async Task VerifyFiles(Action<bool> verified, Action<string, bool> updateStatus, CancellationToken token)
         {
             await ((!_selected && HasSelectedAncestor)
                 ? BaseDir!.verifyFiles(verified, updateStatus, token) // It's not possible to verify only some of the files covered by a recovery file, so do the whole lot.
                 : verifyFiles(verified, updateStatus, token));
         }
-        private async Task verifyFiles(Action<bool> verified, Action<string> updateStatus, CancellationToken token)
+        private async Task verifyFiles(Action<bool> verified, Action<string, bool> updateStatus, CancellationToken token)
         {
             if (token.IsCancellationRequested)
             {
@@ -427,13 +427,13 @@ namespace ParTree
             OnPropertyChanged(nameof(Verified));
         }
 
-        public async Task RepairFiles(Action<bool> repaired, Action<string> updateStatus, CancellationToken token)
+        public async Task RepairFiles(Action<bool> repaired, Action<string, bool> updateStatus, CancellationToken token)
         {
             await ((!_selected && HasSelectedAncestor)
                 ? BaseDir!.repairFiles(repaired, updateStatus, token) // It's not possible to repair only some of the files covered by a recovery file, so do the whole lot.
                 : repairFiles(repaired, updateStatus, token));
         }
-        private async Task repairFiles(Action<bool> repaired, Action<string> updateStatus, CancellationToken token)
+        private async Task repairFiles(Action<bool> repaired, Action<string, bool> updateStatus, CancellationToken token)
         {
             if (token.IsCancellationRequested)
             {

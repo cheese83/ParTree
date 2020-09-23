@@ -13,7 +13,7 @@ namespace ParTree
         private static readonly string PAR2_EXE_NAME = Environment.Is64BitProcess ? "par2j64.exe" : "par2j.exe";
         private static readonly string PAR2_PATH = Path.Combine(AppContext.BaseDirectory, "Par2", PAR2_EXE_NAME);
 
-        public static async Task<int> Create(string inputPath, string recoveryFilePath, Action<string> processStdOutLine, double redundancy, CancellationToken token)
+        public static async Task<int> Create(string inputPath, string recoveryFilePath, Action<string, bool> processStdOutLine, double redundancy, CancellationToken token)
         {
             return await ProcessHelper.RunProcessAsync(PAR2_PATH, processStdOutLine, token, "create", "/uo", $"/rr{redundancy:0.##}", $"\"{recoveryFilePath}\"", $"\"{Path.Combine(inputPath, "*")}\"");
         }
@@ -25,14 +25,14 @@ namespace ParTree
             return parser.Results.ToList();
         }
 
-        public static async Task<IReadOnlyList<Par2VerifyResult>> Verify(string inputPath, string recoveryFilePath, Action<string> processStdOutLine, CancellationToken token)
+        public static async Task<IReadOnlyList<Par2VerifyResult>> Verify(string inputPath, string recoveryFilePath, Action<string, bool> processStdOutLine, CancellationToken token)
         {
             var parser = new Par2jVerifyParser();
-            await ProcessHelper.RunProcessAsync(PAR2_PATH, line => { parser.ProcessLine(line); processStdOutLine(line); }, token, "verify", "/uo", $"/d\"{inputPath}\"", $"\"{recoveryFilePath}\"");
+            await ProcessHelper.RunProcessAsync(PAR2_PATH, (line, newline) => { parser.ProcessLine(line, newline); processStdOutLine(line, newline); }, token, "verify", "/uo", $"/d\"{inputPath}\"", $"\"{recoveryFilePath}\"");
             return parser.Results.ToList();
         }
 
-        public static async Task<int> Repair(string inputPath, string recoveryFilePath, Action<string> processStdOutLine, CancellationToken token)
+        public static async Task<int> Repair(string inputPath, string recoveryFilePath, Action<string, bool> processStdOutLine, CancellationToken token)
         {
             return await ProcessHelper.RunProcessAsync(PAR2_PATH, processStdOutLine, token, "repair", "/uo", $"/d\"{inputPath}\"", $"\"{recoveryFilePath}\"");
         }
@@ -51,7 +51,7 @@ namespace ParTree
             protected abstract IList<LineParser<T>> Parsers { get; }
             public abstract IList<T> Results { get; }
 
-            public void ProcessLine(string line)
+            public void ProcessLine(string line, bool newline)
             {
                 if (Parsers.First()(line, out var result))
                 {

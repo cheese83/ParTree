@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -217,7 +218,7 @@ namespace ParTree
 
         private void OutpuLogClearButton_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.OutputLog = "";
+            ViewModel.ClearOutputLog();
         }
 
         protected override void OnClosed(EventArgs e)
@@ -246,16 +247,8 @@ namespace ParTree
                 ? new List<ParTreeDirectory>()
                 : new List<ParTreeDirectory> { _workingDirectory };
 
-        private string _outputLog = "";
-        public string OutputLog
-        {
-            get => _outputLog;
-            set
-            {
-                _outputLog = value;
-                OnPropertyChanged();
-            }
-        }
+        private IList<string> _outputLog = new List<String>();
+        public string OutputLog => string.Join(Environment.NewLine, _outputLog);
 
         private bool _busy;
         public bool Busy
@@ -314,7 +307,7 @@ namespace ParTree
 
         public async Task SetWorkingDir(string? workingDirPath, IProgress<string> progress, CancellationToken token)
         {
-            OutputLog = "";
+            ClearOutputLog();
 
             if (string.IsNullOrWhiteSpace(workingDirPath))
             {
@@ -343,6 +336,26 @@ namespace ParTree
             IniHelper.SaveValue("par2j", nameof(RedundancyPercent), RedundancyPercent.ToString(CultureInfo.InvariantCulture));
         }
 
-        public void AddLineToOutputLog(string line) => OutputLog += line + Environment.NewLine;
+        public void ClearOutputLog()
+        {
+            _outputLog.Clear();
+            OnPropertyChanged(nameof(OutputLog));
+        }
+
+        public void AddLineToOutputLog(string line, bool newline = true)
+        {
+            if (newline || !_outputLog.Any())
+            {
+                _outputLog.Add(line);
+            }
+            else
+            {
+                var i = _outputLog.Count - 1;
+                var previousLine = _outputLog[i];
+                _outputLog[i] = line + previousLine.Substring(Math.Min(line.Length, previousLine.Length));
+            }
+
+            OnPropertyChanged(nameof(OutputLog));
+        }
     }
 }
