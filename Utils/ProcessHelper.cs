@@ -11,6 +11,8 @@ namespace ParTree
 {
     public static class ProcessHelper
     {
+        private static readonly char[] rn = new char[] { '\r', '\n' };
+
         public static async Task<int> RunProcessAsync(string path, params string[] arguments) => await RunProcessAsync(path, null, CancellationToken.None, arguments);
         public static async Task<int> RunProcessAsync(string path, Action<string, bool>? processStdOut, params string[] arguments) => await RunProcessAsync(path, processStdOut, CancellationToken.None, arguments);
         public static async Task<int> RunProcessAsync(string path, Action<string, bool>? processStdOut, CancellationToken token, params string[] arguments)
@@ -47,7 +49,6 @@ namespace ParTree
                     var buffer = new char[256];
                     var allChars = new List<char>();
                     int charsRead;
-                    var newlineStarted = true;
 
                     do
                     {
@@ -56,30 +57,23 @@ namespace ParTree
 
                         while (allChars.Any() && !token.IsCancellationRequested)
                         {
-                            var indexOfFirstCarriageReturn = allChars.IndexOf('\r');
-                            var indexOfFirstNewLine = allChars.IndexOf('\n');
+                            var lineStartChars = allChars.Take(2).SequenceEqual(rn) ? rn : allChars.Take(1).Where(x => rn.Contains(x)).ToArray();
+                            var lineChars = allChars.Skip(lineStartChars.Length).TakeWhile(x => x != '\r' && x != '\n').ToArray();
+                            var lineEndChars = allChars.Skip(lineStartChars.Length + lineChars.Length).TakeWhile(x => x == '\r' || x == '\n').ToArray();
+                            var newlineStarted = lineStartChars.Length == 0 || lineStartChars[0] == '\n' || lineStartChars.SequenceEqual(rn);
 
-                            if (indexOfFirstCarriageReturn > -1 && indexOfFirstCarriageReturn < allChars.Count - 1 && allChars[indexOfFirstCarriageReturn + 1] != '\n')
+                            if (lineEndChars.Any())
                             {
-                                // The next line should overwrite this one.
-                                var line = new string(allChars.ToArray(), 0, indexOfFirstCarriageReturn);
+                                var line = new string(lineChars);
                                 processStdOut(line, newlineStarted);
-                                allChars.RemoveRange(0, indexOfFirstCarriageReturn + 1);
-                                newlineStarted = false;
-                            }
-                            else if (indexOfFirstNewLine > -1)
-                            {
-                                // The next line should be a new line.
-                                var line = new string(allChars.ToArray(), 0, indexOfFirstNewLine).TrimEnd('\r');
-                                processStdOut(line, newlineStarted);
-                                allChars.RemoveRange(0, indexOfFirstNewLine + 1);
-                                newlineStarted = true;
+                                allChars.RemoveRange(0, lineStartChars.Length + lineChars.Length);
                             }
                             else if (charsRead == 0)
                             {
                                 // No more input, so treat everything that's left as a line.
-                                var line = new string(allChars.ToArray()).TrimEnd('\r');
+                                var line = new string(lineChars);
                                 processStdOut(line, newlineStarted);
+                                break;
                             }
                             else
                             {

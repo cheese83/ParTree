@@ -77,7 +77,7 @@ namespace ParTree
                     Parsers.RemoveAt(0);
                 }
 
-                if (lineType.HasFlag(LineType.Printable) && callback != null)
+                if ((lineType.HasFlag(LineType.Printable) || newline) && callback != null)
                 {
                     callback(line, newline);
                 }
