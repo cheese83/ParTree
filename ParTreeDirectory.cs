@@ -50,11 +50,11 @@ namespace ParTree
 
         private IReadOnlyCollection<ParTreeFile> _allRecoverableFiles;
         /// <summary>Files covered by a recovery file, in this directory and all subdirectories</summary>
-        private IReadOnlyCollection<ParTreeFile> AllRecoverableFiles => IsBaseDir || !HasRecoveryFiles
-            ? _allRecoverableFiles
-            : _parent!.AllRecoverableFiles
+        private IReadOnlyCollection<ParTreeFile> AllRecoverableFiles => IsBaseDir ? _allRecoverableFiles
+            : HasSelectedAncestor ? BaseDir!.AllRecoverableFiles
                 .Where(x => x.DirPath.StartsWith(DirPath, StringComparison.Ordinal))
-                .ToList();
+                .ToList()
+            : _allRecoverableFiles;
         /// <summary>Files in this directory covered by a recovery file</summary>
         private IReadOnlyList<ParTreeFile> RecoverableFiles => AllRecoverableFiles.Where(x => x.DirPath == DirPath).ToList();
         /// <summary>All files in this directory and its subdirectories</summary>
@@ -162,7 +162,7 @@ namespace ParTree
                 OnPropertyChanged(name);
             }
 
-            if (_parent != null)
+            if (_parent != null && IsBaseDir)
             {
                 var relatedParentProperties = property
                     .GetCustomAttributes(typeof(RelatedParentPropertiesAttribute), inherit: false)
