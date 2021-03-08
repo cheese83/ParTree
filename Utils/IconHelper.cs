@@ -114,20 +114,16 @@ namespace ParTree
 
         public static ImageSource GetImageSource(string path, bool large = false)
         {
-            using (var icon = FetchIcon(path, large))
-            {
-                return icon == null
-                    ? GetImageSource(SIID.DOCNOASSOC, large)
-                    : Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-            }
+            using var icon = FetchIcon(path, large);
+            return icon == null
+                ? GetImageSource(SIID.DOCNOASSOC, large)
+                : Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
         }
 
         public static ImageSource GetImageSource(SIID iconId, bool large = false)
         {
-            using (var icon = StockIcons.GetStockIcon(iconId, large))
-            {
-                return Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-            }
+            using var icon = StockIcons.GetStockIcon(iconId, large);
+            return Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
         }
 
         private static Icon? FetchIcon(string path, bool large)
@@ -193,13 +189,13 @@ namespace ParTree
             [Flags]
             private enum SHGSI : uint
             {
-                ICONLOCATION = 0,
                 LARGEICON = 0x0,
                 SMALLICON = 0x1,
                 SHELLICONSIZE = 0x4,
                 ICON = 0x100,
                 SYSICONINDEX = 0x4000,
                 LINKOVERLAY = 0x8000,
+                ICONLOCATION = 0x1000,
                 SELECTED = 0x10000
             }
 

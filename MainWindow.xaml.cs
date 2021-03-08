@@ -106,14 +106,13 @@ namespace ParTree
 
             // If a dir was previously open, then opening a new one select the first node.
             // That causes spurious scrolling under some conditions, so deselect it now.
-            var firstItem = DirTree.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
-            if (firstItem != null)
+            if (DirTree.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstItem)
             {
                 firstItem.IsSelected = false;
             }
         }
 
-        private T DataContextFromEventSender<T>(object sender) => (T)((FrameworkElement)sender).DataContext;
+        private static T DataContextFromEventSender<T>(object sender) => (T)((FrameworkElement)sender).DataContext;
 
         private async void TreeViewItem_Checked(object sender, RoutedEventArgs e)
         {
@@ -160,7 +159,7 @@ namespace ParTree
                     {
                         ViewModel.AddLineToOutputLog(file.FullName);
                     }
-                });
+                }, token);
             });
         }
 
@@ -180,7 +179,7 @@ namespace ParTree
                     {
                         ViewModel.AddLineToOutputLog(dir.DirPath);
                     }
-                });
+                }, token);
             });
         }
 
@@ -228,9 +227,9 @@ namespace ParTree
             // This would be better done in XAML, but I can't find a way to do it.
             for (var element = VisualTreeHelper.GetParent((FrameworkElement)sender); element != null; element = VisualTreeHelper.GetParent(element))
             {
-                if (element is TreeViewItem)
+                if (element is TreeViewItem item)
                 {
-                    ((TreeViewItem)element).IsSelected = true;
+                    item.IsSelected = true;
                     break;
                 }
             }
@@ -267,7 +266,7 @@ namespace ParTree
                 ? new List<ParTreeDirectory>()
                 : new List<ParTreeDirectory> { _workingDirectory };
 
-        private IList<string> _outputLog = new List<String>();
+        private readonly IList<string> _outputLog = new List<String>();
         public string OutputLog => string.Join(Environment.NewLine, _outputLog);
 
         private bool _busy;
@@ -372,7 +371,7 @@ namespace ParTree
             {
                 var i = _outputLog.Count - 1;
                 var previousLine = _outputLog[i];
-                _outputLog[i] = line + previousLine.Substring(Math.Min(line.Length, previousLine.Length));
+                _outputLog[i] = line + previousLine[Math.Min(line.Length, previousLine.Length)..];
             }
 
             OnPropertyChanged(nameof(OutputLog));

@@ -18,14 +18,14 @@ namespace ParTree
         public string DirPath { get; }
         /// <summary>If this dir is set as the Base Directory of the associated PAR2 file</summary>
         private bool IsBaseDir => _selected;
-        private DirectoryInfo DirInfo => new DirectoryInfo(DirPath);
+        private DirectoryInfo DirInfo => new(DirPath);
         public string Name => DirInfo.Name;
         public bool Exists => DirInfo.Exists;
 
         /// <summary>Location of recovery files that are for this directory, not a parent directory</summary>
         private readonly string _thisRecoveryDirPath;
         /// <summary>Location of recovery files that are for this directory, not a parent directory</summary>
-        private DirectoryInfo ThisRecoveryDirInfo => new DirectoryInfo(_thisRecoveryDirPath);
+        private DirectoryInfo ThisRecoveryDirInfo => new(_thisRecoveryDirPath);
         /// <summary>Recovery files that are for this directory, not a parent directory</summary>
         private string ThisRecoveryFilePath => Path.Combine(_thisRecoveryDirPath, $"{ThisRecoveryDirInfo.Name}.{PAR2_EXTENSION}");
         /// <summary>Recovery files that are for this directory, not a parent directory</summary>
@@ -131,7 +131,7 @@ namespace ParTree
                 }
                 else
                 {
-                    string summary(IEnumerable<ParTreeFile> files) => string.Join(Environment.NewLine, files.GroupBy(x => x.Status).OrderBy(g => (int)g.Key).Select(g => $"{g.Key}: {g.Count()}"));
+                    static string summary(IEnumerable<ParTreeFile> files) => string.Join(Environment.NewLine, files.GroupBy(x => x.Status).OrderBy(g => (int)g.Key).Select(g => $"{g.Key}: {g.Count()}"));
                     var hasFilesInThisDirectory = Files.Any();
                     var hasFilesInSubdirectories = AllFiles.Count > Files.Count;
 
@@ -256,31 +256,29 @@ namespace ParTree
             // Unfortunately .Net doesn't have a built-in way to limit the number of async tasks running at once. Using a semaphore for that purpose seems to perform pretty well.
             // Since this involves IO, there's probably a limit to how many it's worth running in parallel. Not sure how to determine a good limit, so just pick 16.
             var maxThreads = Math.Min(Environment.ProcessorCount, 16);
-            using (var sem = new SemaphoreSlim(maxThreads))
+            using var sem = new SemaphoreSlim(maxThreads);
+            IEnumerable<ParTreeDirectory> dirs = new List<ParTreeDirectory> { topDir };
+
+            while (dirs.Any() && !token.IsCancellationRequested)
             {
-                IEnumerable<ParTreeDirectory> dirs = new List<ParTreeDirectory> { topDir };
-
-                while (dirs.Any() && !token.IsCancellationRequested)
+                var tasks = dirs.Where(dir => dir.ContainsRecoverableFiles).Select(async dir =>
                 {
-                    var tasks = dirs.Where(dir => dir.ContainsRecoverableFiles).Select(async dir =>
+                    await sem.WaitAsync();
+
+                    try
                     {
-                        await sem.WaitAsync();
+                        foundRecoveryFiles(dir.IsBaseDir);
+                        return token.IsCancellationRequested
+                            ? new List<ParTreeDirectory>(0)
+                            : await Task.Run(() => dir.Subdirectories);
+                    }
+                    finally
+                    {
+                        sem.Release();
+                    }
+                });
 
-                        try
-                        {
-                            foundRecoveryFiles(dir.IsBaseDir);
-                            return token.IsCancellationRequested
-                                ? new List<ParTreeDirectory>(0)
-                                : await Task.Run(() => dir.Subdirectories);
-                        }
-                        finally
-                        {
-                            sem.Release();
-                        }
-                    });
-
-                    dirs = (await Task.WhenAll(tasks)).SelectMany(x => x);
-                }
+                dirs = (await Task.WhenAll(tasks)).SelectMany(x => x);
             }
         }
 
