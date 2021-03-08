@@ -430,7 +430,7 @@ namespace ParTree
                     ? await Par2Helper.Verify(DirPath, ThisRecoveryFilePath, updateStatus, token)
                     : null; // If the directory is missing, par2j can't check it. Just flag everything as missing.
                 Func<ParTreeFile, string?> statusOfFile = DirInfo.Exists
-                    ? file => results.SingleOrDefault(x => Path.GetFullPath(x.Filename, DirPath) == file.FullName)?.Status
+                    ? file => results!.SingleOrDefault(x => Path.GetFullPath(x.Filename, DirPath) == file.FullName)?.Status
                     : (Func<ParTreeFile, string?>)(file => "Missing");
 
                 foreach (var file in AllFiles)
@@ -539,10 +539,10 @@ namespace ParTree
         public ParTreeFile(FileInfo fileInfo, FileStatus status)
         {
             Status = status;
-            DirPath = fileInfo.Directory.FullName;
+            DirPath = fileInfo.Directory?.FullName ?? "";
             FullName = fileInfo.FullName;
             Name = fileInfo.Name;
-            _parentDirPath = fileInfo.Directory.Parent?.FullName ?? "";
+            _parentDirPath = fileInfo.Directory?.Parent?.FullName ?? "";
         }
 
         public bool IsInSubdirectoryOf(DirectoryInfo dir) => dir.FullName == _parentDirPath;

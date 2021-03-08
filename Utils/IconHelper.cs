@@ -116,7 +116,9 @@ namespace ParTree
         {
             using (var icon = FetchIcon(path, large))
             {
-                return Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                return icon == null
+                    ? GetImageSource(SIID.DOCNOASSOC, large)
+                    : Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
             }
         }
 
@@ -128,7 +130,7 @@ namespace ParTree
             }
         }
 
-        private static Icon FetchIcon(string path, bool large)
+        private static Icon? FetchIcon(string path, bool large)
         {
             return Directory.Exists(path) ? FileInfo.ExtractFromPath(path, large)
                 : File.Exists(path) ? Icon.ExtractAssociatedIcon(path)
