@@ -202,7 +202,7 @@ namespace ParTree
                 var existantFiles = DirInfo.EnumerateFilesOrEmpty();
                 var unverifiableFiles = DirInfo.EnumerateFilesOrEmpty()
                     .Where(x => !AllRecoverableFiles.Any(y => x.FullName == y.FullName))
-                    .Select(x => new ParTreeFile(x, FileStatus.Unknown));
+                    .Select(x => new ParTreeFile(x, HasRecoveryFiles ? FileStatus.New : FileStatus.Unknown));
 
                 Files = unverifiableFiles.Concat(RecoverableFiles).OrderBy(x => x.Name).ToList();
 
