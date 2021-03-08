@@ -10,8 +10,8 @@ ParTree uses par2j, which is part of [Multipar](http://hp.vector.co.jp/authors/V
 
 ## Requirements
 
-* .NET Core 3.1 or later https://dotnet.microsoft.com/download/dotnet-core/current/runtime
-* Any version of Windows that can run .NET Core 3.1 (Windows 7, 8, 8.1, 10).
+* .NET 5.0 or later https://dotnet.microsoft.com/download/dotnet/current/runtime
+* Any version of Windows that can run .NET 5.0 (Windows 7, 8, 8.1, 10).
 
 ## Installation
 
