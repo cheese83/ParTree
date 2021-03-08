@@ -204,7 +204,7 @@ namespace ParTree
                     .Where(x => !AllRecoverableFiles.Any(y => x.FullName == y.FullName))
                     .Select(x => new ParTreeFile(x, FileStatus.Unknown));
 
-                Files = unverifiableFiles.Concat(RecoverableFiles).ToList();
+                Files = unverifiableFiles.Concat(RecoverableFiles).OrderBy(x => x.Name).ToList();
 
                 var missingFiles = RecoverableFiles
                     .Where(x => !existantFiles.Any(y => x.FullName == y.FullName));
@@ -239,6 +239,7 @@ namespace ParTree
                         // Passing "this" out here. This is fine since _subdirectories is lazy, so the subsequent constructor isn't executed until after
                         // construction of "this" is completed... as long as nothing within this constructor causes _subdirectories to be initialized.
                         .Select(x => new ParTreeDirectory(x, this))
+                        .OrderBy(x => x.Name)
                         .ToList();
                 }
                 catch
