@@ -310,6 +310,34 @@ namespace ParTree
             }
         }
 
+        /// <returns>Unselected directories that have selected siblings, or the top directory alone if there are no selected directories</returns>
+        public async Task<IReadOnlyCollection<ParTreeDirectory>> GetAllUnrecoverableDirectories(Action<int> dirsFound, CancellationToken token)
+        {
+            if (token.IsCancellationRequested)
+            {
+                return new List<ParTreeDirectory>();
+            }
+
+            if (HasRecoveryFiles)
+            {
+                return new List<ParTreeDirectory>();
+            }
+            else if (ContainsRecoverableFiles)
+            {
+                var unrecoverableDirs = new List<ParTreeDirectory>();
+                foreach (var dir in Subdirectories)
+                {
+                    unrecoverableDirs.AddRange(await dir.GetAllUnrecoverableDirectories(dirsFound, token));
+                }
+                return unrecoverableDirs;
+            }
+            else
+            {
+                dirsFound(1);
+                return new List<ParTreeDirectory>() { this };
+            }
+        }
+
         public async Task CreateRecoveryFiles(Action<string, bool> updateStatus, double redundancy, CancellationToken token)
         {
             if (!WorkingDir.ThisRecoveryDirInfo.Exists)

@@ -164,6 +164,26 @@ namespace ParTree
             });
         }
 
+        private async void CheckForUnrecoverableDirs_Click(object sender, RoutedEventArgs e)
+        {
+            await ShowOverlayUntilComplete("Checking for unrecoverable directories", (progress, token) =>
+            {
+                var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
+                return Task.Run(async () =>
+                {
+                    var dirCount = 0;
+                    var dirs = await dirInfo.GetAllUnrecoverableDirectories(count => progress.Report($"Found {dirCount += count} directories"), token);
+
+                    ViewModel.AddLineToOutputLog($"Found {dirs.Count} unselected directories.");
+
+                    foreach (var dir in dirs)
+                    {
+                        ViewModel.AddLineToOutputLog(dir.DirPath);
+                    }
+                });
+            });
+        }
+
         private void DeleteUnused_Click(object sender, RoutedEventArgs e)
         {
             var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
