@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace ParTree
 {
+    [AttributeUsage(AttributeTargets.Property)]
     public class RelatedPropertiesAttribute : Attribute
     {
         public IReadOnlyList<string> Names { get; }
