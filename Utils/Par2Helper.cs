@@ -167,16 +167,6 @@ namespace ParTree
             };
         }
 
-        public class Par2VerifyResult
-        {
-            public string Filename { get; }
-            public string Status { get; }
-
-            public Par2VerifyResult(string filename, string status)
-            {
-                Filename = filename;
-                Status = status;
-            }
-        }
+        public record Par2VerifyResult(string Filename, string Status);
     }
 }
