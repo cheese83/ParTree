@@ -183,12 +183,6 @@ namespace ParTree
             });
         }
 
-        private void DeleteUnused_Click(object sender, RoutedEventArgs e)
-        {
-            var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
-            dirInfo.DeleteUnusedRecoveryFiles();
-        }
-
         private async void Verify_Click(object sender, RoutedEventArgs e)
         {
             await ShowOverlayUntilComplete("Verifying Files", (progress, token) =>
@@ -198,6 +192,7 @@ namespace ParTree
                 return dirInfo.VerifyFiles(verified => { if (verified) progress.Report($"Verified {++verifiedDirCount} directories"); }, ViewModel.AddLineToOutputLog, token);
             });
         }
+
         private async void Repair_Click(object sender, RoutedEventArgs e)
         {
             await ShowOverlayUntilComplete("Repairing Files", (progress, token) =>
