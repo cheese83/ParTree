@@ -49,11 +49,11 @@ namespace ParTree
             /// <returns>True if this parser should continue to be used. False to move on to the next parser in the list for the next line</returns>
             protected delegate LineType LineParser<U>(string line, out U? result) where U : class;
 
-            protected LineType NullParser(string line, out T? result)
+            protected readonly LineParser<T> NullParser = (string line, out T? result) =>
             {
                 result = default;
                 return LineType.Parsed | LineType.Printable;
-            }
+            };
 
             protected abstract IList<LineParser<T>> Parsers { get; }
             public abstract IList<T> Results { get; }
@@ -100,18 +100,18 @@ namespace ParTree
                 Results = new List<string>();
             }
 
-            private LineType UntilInputFileList(string line, out string? result)
+            private readonly LineParser<string> UntilInputFileList = (string line, out string? result) =>
             {
                 result = default;
                 return LineType.Printable | (!Regex.IsMatch(line, "\\s+Size\\s+Slice\\s+(?:MD5 Hash\\s+)?:\\s+Filename") ? LineType.Parsed : 0);
-            }
+            };
 
-            private LineType ParseInputFilename(string line, out string? result)
+            private readonly LineParser<string> ParseInputFilename = (string line, out string? result) =>
             {
                 var match = Regex.Match(line, "\\s+[\\d\\?]+\\s+[\\d\\?]+\\s+(?:[\\da-fA-F\\?]+\\s+)?:\\s+\"(.*[^/])\"");
                 result = match.Success ? match.Groups[1].Value : null;
                 return LineType.Printable | (match.Success ? LineType.Parsed : 0);
-            }
+            };
         }
 
         private class Par2jVerifyParser : Par2jOutputParser<Par2VerifyResult>
@@ -132,27 +132,27 @@ namespace ParTree
                 Results = new List<Par2VerifyResult>();
             }
 
-            private LineType UntilLoadingPar(string line, out Par2VerifyResult? result)
+            private readonly LineParser<Par2VerifyResult> UntilLoadingPar = (string line, out Par2VerifyResult? result) =>
             {
                 result = default;
                 return LineType.Printable | (!Regex.IsMatch(line, "\\s+Packet\\s+Slice\\s+Status\\s+:\\s+Filename") ? LineType.Parsed : 0);
-            }
+            };
 
-            private LineType ParseLoadingPar(string line, out Par2VerifyResult? result)
+            private readonly LineParser<Par2VerifyResult> ParseLoadingPar = (string line, out Par2VerifyResult? result) =>
             {
                 result = default;
                 var progressMatch = Regex.Match(line, "^\\s*(\\d+\\.?\\d*)(%)?(?:[^:]*)(:)?");
 
                 return (progressMatch.Groups[2].Success || progressMatch.Groups[3].Success ? LineType.Printable : 0) | (progressMatch.Success ? LineType.Parsed : 0);
-            }
+            };
 
-            private LineType UntilVerifyingList(string line, out Par2VerifyResult? result)
+            private readonly LineParser<Par2VerifyResult> UntilVerifyingList = (string line, out Par2VerifyResult? result) =>
             {
                 result = default;
                 return LineType.Printable | (!Regex.IsMatch(line, "\\s+Size\\s+Status\\s+:\\s+Filename") ? LineType.Parsed : 0);
-            }
+            };
 
-            private LineType ParseVerifyFileStatus(string line, out Par2VerifyResult? result)
+            private readonly LineParser<Par2VerifyResult> ParseVerifyFileStatus = (string line, out Par2VerifyResult? result) =>
             {
                 var progressMatch = Regex.Match(line, "^\\s*(\\d+\\.?\\d*)(%)?");
                 if (progressMatch.Success)
@@ -164,7 +164,7 @@ namespace ParTree
                 var completedMatch = Regex.Match(line, ".+\\s+([^\\s]+)\\s+:\\s+\"(.+)\"");
                 result = completedMatch.Success ? new Par2VerifyResult(completedMatch.Groups[2].Value, completedMatch.Groups[1].Value) : null;
                 return LineType.Printable | (completedMatch.Success ? LineType.Parsed : 0);
-            }
+            };
         }
 
         public class Par2VerifyResult
