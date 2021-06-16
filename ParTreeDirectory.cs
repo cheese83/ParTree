@@ -369,16 +369,16 @@ namespace ParTree
             OnPropertyChanged(nameof(Verified));
         }
 
-        public void DeleteUnusedRecoveryFiles()
+        public async Task DeleteUnusedRecoveryFiles(CancellationToken token)
         {
-            if (!ThisRecoveryDirInfo.Exists)
+            if (!ThisRecoveryDirInfo.Exists || token.IsCancellationRequested)
             {
                 return;
             }
 
             foreach (var subDir in Subdirectories)
             {
-                subDir.DeleteUnusedRecoveryFiles();
+                await subDir.DeleteUnusedRecoveryFiles(token);
             }
 
             if (!_selected)
