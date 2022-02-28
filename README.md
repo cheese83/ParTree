@@ -2,7 +2,7 @@
 
 ![Screenshot](Screenshots/screenshot.png)
 
-[ParTree](https://mrevil.asvachin.eu/software/partree/) is a tool for creating [PAR2](https://en.wikipedia.org/wiki/Parchive) recovery files for detecting and correcting errors in stored data. While other such tools exist, they are all intended to create recovery files to protect a fixed set of data, with the data and its recovery files stored together. ParTree is designed to create recovery files for multiple independent sets of data quickly, and stores the recovery files separately.
+[ParTree](https://mrevil.asvachin.com/software/partree/) is a tool for creating [PAR2](https://en.wikipedia.org/wiki/Parchive) recovery files for detecting and correcting errors in stored data. While other such tools exist, they are all intended to create recovery files to protect a fixed set of data, with the data and its recovery files stored together. ParTree is designed to create recovery files for multiple independent sets of data quickly, and stores the recovery files separately.
 
 The intended use is to protect backup drives from corruption. Since backup drives typically have data added to them regularly, it's not practical to create a single set of recovery files for the whole drive at once, as they would need to be recreated every time the data changed. ParTree makes it easier to create recovery files for only the new or changed data. As ParTree stores the recovery files in a separate directory, they aren't mixed up with the actual data, making restoring from the backup easier.
 
