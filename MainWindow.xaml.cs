@@ -49,6 +49,7 @@ namespace ParTree
         /// <returns>True if the task was cancelled</returns>
         private async Task<bool> ShowOverlayUntilComplete(string busyTitle, Func<IProgress<string>, CancellationToken, Task> action)
         {
+            ViewModel.ClearOutputLog();
             var tokenSource = new CancellationTokenSource();
             var progress = new Progress<string>(s => ViewModel.BusyProgress = s);
             void cancelButton_Click(object sender, RoutedEventArgs e)
@@ -324,8 +325,6 @@ namespace ParTree
 
         public async Task SetWorkingDir(string? workingDirPath, IProgress<string> progress, CancellationToken token)
         {
-            ClearOutputLog();
-
             if (string.IsNullOrWhiteSpace(workingDirPath))
             {
                 _workingDirectory = null;
