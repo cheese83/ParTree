@@ -90,7 +90,7 @@ namespace ParTree
         [RelatedProperties(nameof(Enabled), nameof(ContainsRecoverableFiles), nameof(Verified))]
         public bool? Selected
         {
-            get => _selected ? true : ContainsSelectedSubdirectory ? (bool?)null : false;
+            get => _selected ? true : ContainsSelectedSubdirectory ? null : false;
             set
             {
                 _selected = value ?? false;
@@ -110,7 +110,7 @@ namespace ParTree
                 || !_subdirectories.IsValueCreated
                 || (!HasRecoveryFiles && !Subdirectories.Any(x => x.Verified == false) && Subdirectories.Any(x => x.ContainsRecoverableFiles && x.Verified == null))
                 || (HasRecoveryFiles && AllFiles.Any(x => x.IsVerifiable && !x.IsVerified) && !AllFiles.Any(x => x.IsIncomplete))
-            ? (bool?)null
+            ? null
             : (!HasRecoveryFiles || Files.Where(x => x.IsVerifiable).All(x => x.IsComplete)) && Subdirectories.Where(x => x.ContainsRecoverableFiles).All(x => x.Verified == true);
 
         public string StatusSummary
@@ -434,7 +434,7 @@ namespace ParTree
                     : null; // If the directory is missing, par2j can't check it. Just flag everything as missing.
                 Func<ParTreeFile, string?> statusOfFile = DirInfo.Exists
                     ? file => results!.SingleOrDefault(x => Path.GetFullPath(x.Filename, DirPath) == file.FullName)?.Status
-                    : (Func<ParTreeFile, string?>)(file => "Missing");
+                    : (file => "Missing");
 
                 foreach (var file in AllFiles)
                 {

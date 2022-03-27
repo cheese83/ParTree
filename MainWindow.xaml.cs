@@ -264,7 +264,7 @@ namespace ParTree
                 ? new List<ParTreeDirectory>()
                 : new List<ParTreeDirectory> { _workingDirectory };
 
-        private readonly IList<string> _outputLog = new List<String>();
+        private readonly IList<string> _outputLog = new List<string>();
         public string OutputLog => string.Join(Environment.NewLine, _outputLog);
 
         private bool _busy;
