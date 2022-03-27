@@ -371,13 +371,18 @@ namespace ParTree
 
         public async Task DeleteUnusedRecoveryFiles(CancellationToken token)
         {
-            if (!ThisRecoveryDirInfo.Exists || token.IsCancellationRequested)
+            if (!ThisRecoveryDirInfo.Exists)
             {
                 return;
             }
 
             foreach (var subDir in Subdirectories)
             {
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 await subDir.DeleteUnusedRecoveryFiles(token);
             }
 
