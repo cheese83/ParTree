@@ -15,7 +15,12 @@ namespace ParTree
 
         public static async Task<int> Create(string inputPath, string recoveryFilePath, Action<string, bool> processStdOutLine, double redundancy, CancellationToken token)
         {
-            return await ProcessHelper.RunProcessAsync(PAR2_PATH, processStdOutLine, token, "create", "/uo", $"/rr{redundancy:0.##}", $"\"{recoveryFilePath}\"", $"\"{Path.Combine(inputPath, "*")}\"");
+            // par2j excludes hidden files when searching with a "*" wildcard, so they must be included individually.
+            var hiddenFiles = new DirectoryInfo(inputPath).EnumerateFilesOrEmpty("*", SearchOption.AllDirectories)
+                .Where(f => f.Attributes.HasFlag(FileAttributes.Hidden))
+                .Select(f => $"\"{f.FullName}\"");
+
+            return await ProcessHelper.RunProcessAsync(PAR2_PATH, processStdOutLine, token, "create", "/uo", $"/rr{redundancy:0.##}", $"\"{recoveryFilePath}\"", $"\"{Path.Combine(inputPath, "*")}\"", string.Join(' ', hiddenFiles));
         }
 
         public static async Task<IReadOnlyList<string>> List(string recoveryFilePath)
