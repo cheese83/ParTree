@@ -10,8 +10,8 @@ ParTree uses par2j, which is part of [Multipar](http://hp.vector.co.jp/authors/V
 
 ## Requirements
 
-* .NET 5.0 or later https://dotnet.microsoft.com/download/dotnet/current/runtime
-* Any version of Windows that can run .NET 5.0 (Windows 7, 8, 8.1, 10).
+* .NET 6.0 or later https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime
+* Any version of Windows that can run .NET 6.0 (Windows 7, 8, 8.1, 10).
 
 ## Installation
 
