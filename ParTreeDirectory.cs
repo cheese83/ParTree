@@ -363,7 +363,8 @@ namespace ParTree
             }
             else
             {
-                // TODO: Display error.
+                updateStatus("Unexpected error creating recovery files.", true);
+                Selected = false;
             }
 
             OnPropertyChanged(nameof(Verified));
