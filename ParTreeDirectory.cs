@@ -270,7 +270,7 @@ namespace ParTree
                         foundRecoveryFiles(dir.IsBaseDir);
                         return token.IsCancellationRequested
                             ? new List<ParTreeDirectory>(0)
-                            : await Task.Run(() => dir.Subdirectories);
+                            : await Task.Run(() => dir.Subdirectories, token);
                     }
                     finally
                     {

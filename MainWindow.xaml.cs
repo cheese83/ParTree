@@ -140,7 +140,7 @@ namespace ParTree
             {
                 await ShowOverlayUntilComplete("Deleting old recovery files", (progress, token) =>
                 {
-                    return Task.Run(async () => await dirInfo.DeleteUnusedRecoveryFiles(token));
+                    return Task.Run(async () => await dirInfo.DeleteUnusedRecoveryFiles(token), token);
                 });
             }
         }
@@ -333,7 +333,7 @@ namespace ParTree
             else
             {
                 progress.Report("Initializing");
-                await Task.Run(() => _workingDirectory = new ParTreeDirectory(workingDirPath));
+                await Task.Run(() => _workingDirectory = new ParTreeDirectory(workingDirPath), token);
                 var recoveryFiles = 0;
                 await ParTreeDirectory.CheckForVerifiableFiles(_workingDirectory!, found => { if (found) progress.Report($"Found {++recoveryFiles} recovery files"); }, token);
             }
