@@ -415,18 +415,20 @@ namespace ParTree
             }
         }
 
-        public async Task VerifyFiles(Action<bool> verified, Action<string, bool> updateStatus, CancellationToken token)
+        public async Task VerifyFiles(Action<bool?> verified, Action<string, bool> updateStatus, CancellationToken token)
         {
             await ((!_selected && HasSelectedAncestor)
                 ? BaseDir!.verifyFiles(verified, updateStatus, token) // It's not possible to verify only some of the files covered by a recovery file, so do the whole lot.
                 : verifyFiles(verified, updateStatus, token));
         }
-        private async Task verifyFiles(Action<bool> verified, Action<string, bool> updateStatus, CancellationToken token)
+        private async Task verifyFiles(Action<bool?> verified, Action<string, bool> updateStatus, CancellationToken token)
         {
             if (token.IsCancellationRequested)
             {
                 return;
             }
+
+            bool? result;
 
             if (_selected)
             {
@@ -448,9 +450,15 @@ namespace ParTree
                         _ => FileStatus.Corrupt
                     };
                 }
+
+                result = Files.All(f => f.IsComplete);
+            }
+            else
+            {
+                result = null;
             }
 
-            verified(_selected);
+            verified(result);
 
             foreach (var subDir in Subdirectories)
             {

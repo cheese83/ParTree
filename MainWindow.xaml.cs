@@ -189,12 +189,23 @@ namespace ParTree
 
         private async void Verify_Click(object sender, RoutedEventArgs e)
         {
+            var verifiedDirCount = 0;
+            var completeDirCount = 0;
             await ShowOverlayUntilComplete("Verifying Files", (progress, token) =>
             {
                 var dirInfo = DataContextFromEventSender<ParTreeDirectory>(sender);
-                var verifiedDirCount = 0;
-                return dirInfo.VerifyFiles(verified => { if (verified) progress.Report($"Verified {++verifiedDirCount} directories"); }, ViewModel.AddLineToOutputLog, token);
+                return dirInfo.VerifyFiles(verified =>
+                {
+                    if (verified.HasValue)
+                    {
+                        completeDirCount += verified.Value ? 1 : 0;
+                        progress.Report($"Verified {++verifiedDirCount} directories");
+                    }
+                }, ViewModel.AddLineToOutputLog, token);
             });
+            ViewModel.AddLineToOutputLog($"Verified {verifiedDirCount} directories.", newline: true);
+            ViewModel.AddLineToOutputLog($"{completeDirCount} complete.", newline: true);
+            ViewModel.AddLineToOutputLog($"{verifiedDirCount - completeDirCount} corrupt.", newline: true);
         }
 
         private async void Repair_Click(object sender, RoutedEventArgs e)
